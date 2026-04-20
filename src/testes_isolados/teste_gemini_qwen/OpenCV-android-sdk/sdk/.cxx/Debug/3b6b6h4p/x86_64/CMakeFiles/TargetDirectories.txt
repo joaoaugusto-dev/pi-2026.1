@@ -1,0 +1,3 @@
+/home/joao/development/teste_opencv/teste_gemini_qwen (outra cópia)/OpenCV-android-sdk/sdk/.cxx/Debug/3b6b6h4p/x86_64/CMakeFiles/opencv_jni_shared.dir
+/home/joao/development/teste_opencv/teste_gemini_qwen (outra cópia)/OpenCV-android-sdk/sdk/.cxx/Debug/3b6b6h4p/x86_64/CMakeFiles/edit_cache.dir
+/home/joao/development/teste_opencv/teste_gemini_qwen (outra cópia)/OpenCV-android-sdk/sdk/.cxx/Debug/3b6b6h4p/x86_64/CMakeFiles/rebuild_cache.dir

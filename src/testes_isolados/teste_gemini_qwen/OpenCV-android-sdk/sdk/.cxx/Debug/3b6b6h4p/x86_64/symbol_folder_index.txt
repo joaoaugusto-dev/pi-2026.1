@@ -1,0 +1,1 @@
+/home/joao/development/teste_opencv/teste_gemini_qwen (outra cópia)/build/opencv/intermediates/cxx/Debug/3b6b6h4p/obj/x86_64

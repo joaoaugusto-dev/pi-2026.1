@@ -1,0 +1,3 @@
+/home/joao/development/teste_opencv/medicao_opencv_pdf/OpenCV-android-sdk/sdk/.cxx/Debug/43k1q2y1/x86/CMakeFiles/opencv_jni_shared.dir
+/home/joao/development/teste_opencv/medicao_opencv_pdf/OpenCV-android-sdk/sdk/.cxx/Debug/43k1q2y1/x86/CMakeFiles/edit_cache.dir
+/home/joao/development/teste_opencv/medicao_opencv_pdf/OpenCV-android-sdk/sdk/.cxx/Debug/43k1q2y1/x86/CMakeFiles/rebuild_cache.dir
