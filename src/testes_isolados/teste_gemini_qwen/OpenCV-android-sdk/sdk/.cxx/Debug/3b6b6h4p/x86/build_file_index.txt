@@ -1,0 +1,1 @@
+/home/joao/development/teste_opencv/teste_gemini_qwen (outra cópia)/OpenCV-android-sdk/sdk/libcxx_helper/CMakeLists.txt
