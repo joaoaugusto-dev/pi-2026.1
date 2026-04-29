@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737897296765",
+    "project_id": "siderapredict",
+    "storage_bucket": "siderapredict.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737897296765:android:7f1a78913ecdfa50045214",
+        "android_client_info": {
+          "package_name": "br.com.siderapredict.siderapredict"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCizqWDACft3t33-dBl490H3xEhK3asrEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

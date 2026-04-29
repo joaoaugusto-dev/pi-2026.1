@@ -1,21 +1,34 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../domain/models/inspection_request.dart';
-import '../../features/diagnostics/presentation/pages/diagnostico_detalhe_page.dart';
-import '../../features/diagnostics/presentation/pages/diagnosticos_page.dart';
-import '../../features/inspection/presentation/pages/analise_scanner.dart';
-import '../../features/inspection/presentation/pages/envio_solicitacao.dart';
-import '../../features/inspection/presentation/pages/inspecao_enviada.dart';
-import '../../features/inspection/presentation/pages/scanner.dart';
-import '../../features/menu/presentation/pages/menu_principal.dart';
-import '../../features/reports/presentation/pages/dashboard_relatorios.dart';
-import '../../features/splash/presentation/pages/splash_page.dart';
-import 'app_routes.dart';
+import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
+import 'package:siderapredict/app/features/inspection/view/analise_page.dart';
+import 'package:siderapredict/app/features/inspection/view/scanner_page.dart';
+import 'package:siderapredict/app/features/inspection/view/validacao_page.dart';
+import 'package:siderapredict/app/features/menu/view/menu_principal_page.dart';
+import 'package:siderapredict/app/features/reports/view/historico_page.dart';
+import 'package:siderapredict/app/features/splash/view/splash_page.dart';
+import 'package:siderapredict/app/features/inspection/viewmodel/scanner_viewmodel.dart';
+import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
+import 'package:siderapredict/app/features/inspection/viewmodel/analysis_viewmodel.dart';
+import 'package:siderapredict/app/features/reports/viewmodel/history_viewmodel.dart';
+import 'package:siderapredict/app/features/inspection/viewmodel/validation_viewmodel.dart';
+import 'package:siderapredict/app/routes/app_routes.dart';
 
-class AnaliseScannerArgs {
+class CameraArgs {
+  final List<CameraDescription> cameras;
+  const CameraArgs({required this.cameras});
+}
+
+class ProcessingArgs {
   final String imagePath;
+  const ProcessingArgs({required this.imagePath});
+}
 
-  const AnaliseScannerArgs({required this.imagePath});
+class ValidationArgs {
+  final MeasurementDraft draft;
+  const ValidationArgs({required this.draft});
 }
 
 class AppPages {
@@ -28,69 +41,81 @@ class AppPages {
           builder: (_) => const SplashPage(),
           settings: settings,
         );
+
       case AppRoutes.menuPrincipal:
         return MaterialPageRoute<void>(
           builder: (_) => const MenuPrincipalPage(),
           settings: settings,
         );
-      case AppRoutes.scanner:
-        return MaterialPageRoute<void>(
-          builder: (_) => const ScannerPage(),
-          settings: settings,
-        );
-      case AppRoutes.analiseScanner:
+
+      case AppRoutes.camera:
         final args = settings.arguments;
-        if (args is! AnaliseScannerArgs) {
+        if (args is! CameraArgs) {
           return _errorRoute(
             settings,
-            'Argumentos invalidos para analise scanner.',
+            'Argumentos inválidos para câmera.',
           );
         }
         return MaterialPageRoute<void>(
-          builder: (_) => AnaliseScanner(imagePath: args.imagePath),
+          builder: (_) => ChangeNotifierProvider<ScannerViewModel>(
+            create: (_) => ScannerViewModel(cameras: args.cameras)..init(),
+            child: const ScannerPage(),
+          ),
           settings: settings,
         );
-      case AppRoutes.envioSolicitacao:
+
+      case AppRoutes.processing:
         final args = settings.arguments;
-        if (args is! InspectionRequest) {
+        if (args is! ProcessingArgs) {
           return _errorRoute(
             settings,
-            'Argumentos invalidos para envio de solicitacao.',
+            'Argumentos inválidos para processamento.',
           );
         }
         return MaterialPageRoute<void>(
-          builder: (_) => EnvioSolicitacaoPage(request: args),
+          builder: (_) => ChangeNotifierProvider<AnalysisViewModel>(
+            create: (context) => AnalysisViewModel(
+              inspectionViewModel: context.read<InspectionViewModel>(),
+              imagePath: args.imagePath,
+            ),
+            child: AnalisePage(imagePath: args.imagePath),
+          ),
           settings: settings,
         );
-      case AppRoutes.inspecaoEnviada:
+
+      case AppRoutes.validation:
         final args = settings.arguments;
-        if (args is! InspectionRequest) {
+        if (args is! ValidationArgs) {
           return _errorRoute(
             settings,
-            'Argumentos invalidos para inspecao enviada.',
+            'Argumentos inválidos para validação.',
           );
         }
         return MaterialPageRoute<void>(
-          builder: (_) => InspecaoEnviadaPage(request: args),
+          builder: (_) => ChangeNotifierProvider<ValidationViewModel>(
+            create: (context) => ValidationViewModel(
+              inspectionViewModel: context.read<InspectionViewModel>(),
+              draft: args.draft,
+            ),
+            child: ValidacaoPage(draft: args.draft),
+          ),
           settings: settings,
         );
-      case AppRoutes.diagnosticos:
+
+      case AppRoutes.history:
         return MaterialPageRoute<void>(
-          builder: (_) => const DiagnosticosPage(),
+          builder: (_) => ChangeNotifierProxyProvider<InspectionViewModel, HistoryViewModel>(
+            create: (context) => HistoryViewModel(
+              inspectionViewModel: context.read<InspectionViewModel>(),
+            ),
+            update: (context, inspection, previous) => previous!,
+            child: const HistoricoPage(),
+          ),
           settings: settings,
         );
-      case AppRoutes.diagnosticoDetalhe:
-        return MaterialPageRoute<void>(
-          builder: (_) => const DiagnosticoDetalhePage(),
-          settings: settings,
-        );
-      case AppRoutes.dashboardRelatorios:
-        return MaterialPageRoute<void>(
-          builder: (_) => const DashboardRelatoriosPage(),
-          settings: settings,
-        );
+
       default:
-        return _errorRoute(settings, 'Rota nao encontrada: ${settings.name}');
+        return _errorRoute(settings, 'Rota não encontrada: ${settings.name}');
     }
   }
 
@@ -98,7 +123,7 @@ class AppPages {
     return MaterialPageRoute<void>(
       settings: settings,
       builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Erro de navegacao')),
+        appBar: AppBar(title: const Text('Erro de navegação')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
