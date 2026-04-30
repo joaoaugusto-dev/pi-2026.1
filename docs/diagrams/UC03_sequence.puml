@@ -1,0 +1,17 @@
+@startuml UC03 - Consultar Histórico e Exportar Relatórios
+title UC03 - Consultar Histórico e Exportar Relatórios (Sequência)
+
+actor Usuário
+participant "Aplicativo (Flutter)" as App
+database "Firebase / DB" as DB
+participant "Serviço de Exportação" as Export
+
+Usuário -> App: Acessar Histórico
+App -> DB: Consultar Inspeções
+DB --> App: Lista de Dados
+App -> Usuário: Exibir Histórico
+Usuário -> App: Solicitar Exportação (Excel/PDF)
+App -> Export: Gerar Relatório
+Export --> App: Arquivo Gerado
+App -> Usuário: Disponibilizar Relatório
+@enduml

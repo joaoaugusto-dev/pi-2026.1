@@ -1,34 +1,29 @@
-
 # Regras de Negócio — SIDERA PREDICT
 
 ---
 
-**RN01 — Comparação Obrigatória com CAD**
-Toda medição dimensional só é válida se comparada automaticamente ao modelo CAD correspondente, garantindo padronização e rastreabilidade.
-Justificativa: Elimina subjetividade e reduz risco de erro humano.
+**RN01 — Interpretação Humana Assistida**
+O sistema fornece as medições precisas via imagem, mas a decisão final de conformidade (OK/NOK) cabe ao operador através da comparação com o desenho técnico.
+Justificativa: Simplifica o processamento e evita erros de interpretação automática de desenhos complexos.
 
-**RN02 — Avaliação por Tolerância Técnica**
-Nenhuma peça é avaliada por valor absoluto; todas as medições são validadas com base em tolerâncias técnicas normatizadas (ex: ABNT, ISO).
-Justificativa: Garante conformidade com padrões industriais.
+**RN02 — Tolerância Industrial Alvo**
+O sistema deve ser calibrado para atender a uma tolerância de **1,5 mm**. Medições com variação superior a esta margem devem ser revisadas.
+Justificativa: Padrão aceitável para processos de corte e dobra na indústria metalúrgica.
 
-**RN03 — Foco no Perfil Lateral**
-A inspeção deve priorizar o perfil lateral da peça, pois representa aproximadamente 90% da geometria relevante para controle dimensional.
-Justificativa: Otimiza o processo e reduz complexidade.
+**RN03 — Obrigatoriedade do Sistema de Marcadores**
+Toda medição dimensional deve ser realizada utilizando a base de 4 marcadores físicos para garantir a escala correta da imagem.
+Justificativa: Elimina distorções causadas pela distância focal da câmera.
 
-**RN04 — Processo Sem Fricção**
-O operador não deve digitar dados durante a inspeção; todas as etapas devem ser automatizadas ou guiadas por seleção.
-Justificativa: Aumenta velocidade e reduz erros de digitação.
+**RN04 — Estabilidade de Captura (Suporte Físico)**
+Para garantir a precisão de 1,5 mm, o dispositivo deve ser mantido em um faceamento a 90º em relação à peça.
+Justificativa: Evita distorções de perspectiva que invalidam a medição.
 
-**RN05 — Inspeção em Tempo Real**
-A inspeção deve ser realizada em poucos segundos, sem interromper o fluxo produtivo.
-Justificativa: Produção industrial não pode ser impactada por lentidão.
+**RN05 — Rastreabilidade Total**
+Toda medição realizada pelo aplicativo deve ser registrada no banco de dados, independentemente do resultado (conforme ou não conforme).
+Justificativa: Garante dados para auditoria e melhoria contínua do processo.
 
-**RN06 — Detecção de Erros Críticos**
-O sistema deve identificar automaticamente os principais erros dimensionais:
-  - Dobra errada
-  - Dobra invertida
-  - Ângulo fora da especificação
-  - Aba fora de medida
-Justificativa: São as principais causas de não conformidade e devolução.
+**RN06 — Exportação de Dados**
+Os dados do histórico de medições devem ser exportáveis para Excel e PDF para análise e integração com sistemas de gestão da fábrica.
+Justificativa: Facilita a análise de KPIs de produção.
 
 ---

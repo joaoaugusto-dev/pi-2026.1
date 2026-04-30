@@ -1,0 +1,18 @@
+@startuml UC03 - Consultar Histórico e Exportar Relatórios
+title UC03 - Consultar Histórico e Exportar Relatórios (Atividades)
+
+start
+:Acessar tela de Histórico;
+:Listar inspeções do banco de dados;
+:Visualizar detalhes (opcional);
+:Selecionar opção de Exportação;
+
+if (Formato escolhido?) then (Excel)
+  :Gerar arquivo XLSX;
+else (PDF)
+  :Gerar arquivo PDF;
+endif
+
+:Disponibilizar arquivo para download;
+stop
+@enduml

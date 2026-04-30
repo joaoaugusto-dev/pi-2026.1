@@ -1,45 +1,44 @@
 ## 🎯 Objetivo do MVP
 
-Validar a inspeção dimensional automática em ambiente real.
+Validar a medição dimensional assistida por imagem em ambiente real, garantindo precisão industrial e rastreabilidade básica.
 
 ---
 
 ## ✅ Funcionalidades Essenciais
 
-- Captura da peça via câmera
-- Seleção da peça (código/OP)
-- Leitura de desenho CAD
-- Extração de medidas (ângulo, abas, base)
-- Comparação com modelo
-- Validação com tolerância
-- Feedback visual (OK / NOK)
-- Registro da inspeção
+- **Captura da peça via câmera:** Orientação visual para enquadramento ideal.
+- **Sistema de Marcadores:** Uso de 4 marcadores físicos para calibração de escala e precisão.
+- **Extração de medidas:** Cálculo automático de comprimentos, ângulos e diâmetros a partir da imagem.
+- **Interpretação Humana Assistida:** Comparação manual das medidas extraídas com o desenho técnico (Blueprint).
+- **Geração de Relatórios:** Histórico de medições exportável para Excel, PDF ou acessível via interface.
+- **Registro de Inspeção:** Armazenamento automático em banco de dados (Firebase).
 
 ---
 
 ## 📌 Casos de Uso do MVP
 
-- UC01 — Inspecionar Peça (Dimensional)
-- UC02 — Analisar Não Conformidade
-- UC03 — Registrar Inspeção
-- UC04 — Visualizar Indicadores
+- **UC01 — Inspecionar Peça (Dimensional Assistida):** O operador utiliza o app para medir a peça e valida com o desenho.
+- **UC02 — Analisar Não Conformidade:** Registro de desvios identificados pelo operador.
+- **UC03 — Registrar Inspeção:** Salvamento automático de dados/resultados.
+- **UC04 — Visualizar Histórico:** Consulta de medições passadas e exportação de dados.
 
 ---
 
 ## 📌 Requisitos Funcionais do MVP
 
-- RF01 a RF04: Acesso, seleção e leitura do CAD
-- RF05 a RF08: Captura, medição e comparação
-- RF09: Validação com tolerância
-- RF10: Feedback visual
-- RF12: Registro automático
+- **RF01:** Acesso rápido ao app.
+- **RF05:** Captura de imagem da peça.
+- **RF06:** Medição via visão computacional com sistema de marcadores.
+- **RF12:** Registro automático de resultados.
+- **RF13:** Sistema de Marcadores (Base de calibração).
+- **RF14:** Exportação de relatórios (Excel/PDF).
+- **RF15:** Uso fácil e intuitivo até pra operadores com pouca experiência em tecnologia.
 
 ---
 
 ## ⚠️ Observação Importante
 
-O foco do projeto está nas **máquinas de dobra menores**, onde ocorre a maior incidência de erros dimensionais (≃80%).
-
-Essa decisão é baseada em **dados reais da operação industrial**, garantindo maior impacto e viabilidade.
+- **Tolerância Alvo:** 1,5 mm (adequada para processos de corte e dobra).
+- **Foco:** Peças físicas metálicas reais (chanfros, furos, semicírculos) para demonstração final.
 
 ---
