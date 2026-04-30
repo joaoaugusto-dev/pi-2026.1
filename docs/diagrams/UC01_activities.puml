@@ -1,52 +1,27 @@
-@startuml
-title UC01 - Inspecionar Peca Dimensionalmente (Atividades)
+@startuml UC01 - Inspecionar Peça Dimensionalmente
+title UC01 - Inspecionar Peça Dimensionalmente (Atividades)
 
 start
 :Abrir aplicativo;
-:Selecionar peca por codigo/OP;
-:Buscar CAD correspondente;
+:Identificar peça;
+:Alinhar peça e marcadores;
+:Capturar imagem;
 
-if (CAD encontrado?) then (Sim)
-  :Extrair dimensoes do CAD;
-  :Exibir orientacao de captura;
-  :Capturar imagem da peca;
-
-  if (Imagem valida?) then (Sim)
-    :Calcular medidas reais;
-    :Comparar com CAD;
-    :Validar tolerancias;
-
-    if (Dentro da tolerancia?) then (Sim)
-      :Definir resultado OK;
-    else (Nao)
-      :Definir resultado NOK;
-      :Destacar dimensoes nao conformes;
-    endif
-
-    :Registrar inspecao;
-    :Exibir feedback imediato;
-    stop
-  else (Nao)
-    :Solicitar nova captura;
-    :Capturar imagem da peca;
-    :Calcular medidas reais;
-    :Comparar com CAD;
-    :Validar tolerancias;
-
-    if (Dentro da tolerancia?) then (Sim)
-      :Definir resultado OK;
-    else (Nao)
-      :Definir resultado NOK;
-      :Destacar dimensoes nao conformes;
-    endif
-
-    :Registrar inspecao;
-    :Exibir feedback imediato;
-    stop
+if (Marcadores detectados?) then (Sim)
+  :Processar escala e medidas;
+  :Exibir medidas sobrepostas;
+  :Comparar com desenho técnico (Humano);
+  
+  if (Peça Conforme?) then (Sim)
+    :Selecionar OK;
+  else (Não)
+    :Selecionar NOK;
   endif
-else (Nao)
-  :Exibir erro de CAD nao encontrado;
-  :Solicitar nova selecao;
+  
+  :Registrar inspeção no banco de dados;
+  stop
+else (Não)
+  :Solicitar nova captura;
   stop
 endif
 

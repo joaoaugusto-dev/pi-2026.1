@@ -1,19 +1,14 @@
-@startuml
-title UC02 - Analise de Nao Conformidade (Sequencia)
+@startuml UC02 - Registrar Não Conformidade
+title UC02 - Registrar Não Conformidade (Sequência)
 
-participant INS as "Motor de Inspecao"
-participant APP as "Aplicativo"
-actor IQ as "Inspetor de Qualidade"
-participant NC as "Modulo Nao Conformidade"
-participant HIST as "Historico"
+actor Operador
+participant "Aplicativo (Flutter)" as App
+database "Firebase / DB" as DB
 
-INS -> APP : Resultado NOK + medidas
-APP -> NC : Solicitar analise detalhada
-NC -> NC : Calcular desvios e classificar erros
-NC --> APP : Diagnostico completo
-IQ -> APP : Informar observacoes e causa provavel
-APP -> HIST : Persistir registro de nao conformidade
-HIST --> APP : Confirmacao
-APP --> IQ : Confirmar registro e destino da peca
-
+Operador -> App: Selecionar NOK
+App -> Operador: Solicitar Motivo da Reprovação
+Operador -> App: Informar Motivo/Observação
+App -> DB: Atualizar Registro com Motivo
+DB --> App: Sucesso
+App -> Operador: Registro Salvo
 @enduml

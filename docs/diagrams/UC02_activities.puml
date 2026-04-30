@@ -1,21 +1,11 @@
-@startuml
-title UC02 - Analise de Nao Conformidade (Atividades)
+@startuml UC02 - Registrar Não Conformidade
+title UC02 - Registrar Não Conformidade (Atividades)
 
 start
-:Receber resultado NOK;
-:Identificar dimensoes fora da tolerancia;
-:Calcular desvios por dimensao;
-:Exibir painel de diagnostico;
-:Inspetor revisa nao conformidades;
-
-if (Requer retrabalho?) then (Sim)
-  :Classificar para retrabalho;
-else (Nao)
-  :Classificar para descarte;
-endif
-
-:Registrar observacoes e causas;
-:Salvar nao conformidade no historico;
+:Identificar status NOK;
+:Solicitar motivo da reprovação;
+:Selecionar motivo ou digitar observação;
+:Vincular motivo ao registro da inspeção;
+:Salvar dados no banco de dados;
 stop
-
 @enduml

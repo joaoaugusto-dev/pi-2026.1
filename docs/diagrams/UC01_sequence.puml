@@ -1,42 +1,22 @@
-@startuml
-title UC01 - Inspecionar Peca Dimensionalmente (Sequencia)
+@startuml UC01 - Inspecionar Peça Dimensionalmente
+title UC01 - Inspecionar Peça Dimensionalmente (Sequência)
 
 actor Operador
-participant App as "Aplicativo"
-participant CAD as "Repositorio CAD"
-participant VC as "Modulo Visao"
-participant REG as "Registro Inspecao"
+participant "Aplicativo (Flutter)" as App
+participant "Vision Engine (OpenCV)" as Vision
+database "Firebase / DB" as DB
 
-Operador -> App : Abrir app
-Operador -> App : Informar codigo/OP
-App -> CAD : Buscar arquivo CAD
-
-alt CAD encontrado
-  CAD --> App : Arquivo CAD
-  App -> App : Extrair dimensoes de referencia
-  App --> Operador : Orientacao de captura
-  Operador -> App : Capturar imagem
-  App -> VC : Validar imagem
-
-  alt Imagem valida
-    VC --> App : Imagem aprovada
-  else Imagem invalida
-    VC --> App : Solicitar nova captura
-    App --> Operador : Reposicionar e capturar novamente
-    Operador -> App : Nova captura
-    App -> VC : Validar/processar imagem
-    VC --> App : Medidas extraidas
-  end
-
-  App -> VC : Comparar medidas reais x CAD
-  VC --> App : Resultado e desvios
-  App -> REG : Salvar inspecao (peca, operador, maquina, data/hora, resultado)
-  REG --> App : Confirmacao de registro
-  App --> Operador : Exibir OK/NOK e detalhes
-
-else CAD nao encontrado
-  CAD --> App : Arquivo inexistente
-  App --> Operador : Erro e solicitar nova selecao
-end
-
+Operador -> App: Iniciar Inspeção
+App -> Operador: Solicitar Identificação da Peça
+Operador -> App: Informar Peça
+App -> Operador: Orientar Alinhamento (90º)
+Operador -> App: Capturar Imagem
+App -> Vision: Processar Imagem (Marcadores)
+Vision --> App: Escala e Medidas Calculadas
+App -> Operador: Exibir Medidas Sobrepostas
+Note right of Operador: Comparação visual com\ndesenho técnico
+Operador -> App: Selecionar Status (OK/NOK)
+App -> DB: Registrar Dados e Resultado
+DB --> App: Confirmação
+App -> Operador: Feedback Final
 @enduml
