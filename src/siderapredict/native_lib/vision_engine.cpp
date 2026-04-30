@@ -13,10 +13,10 @@ namespace {
 
 constexpr float kMarkerSquareMm = 10.0f;
 constexpr float kWarpUpscale = 1.2f;
-constexpr float kMinDisplayEdgeMm = 5.0f;
+constexpr float kMinDisplayEdgeMm = 1.0f;
 constexpr float kMinAngleDeviationDeg = 10.0f;
 constexpr float kMinVertexAngleDeg = 30.0f;
-constexpr size_t kMaxDisplayedEdges = 12U;
+constexpr size_t kMaxDisplayedEdges = 24U;
 constexpr size_t kMaxDisplayedHoles = 6U;
 
 struct MetricScale {
@@ -688,8 +688,8 @@ simplifyPolygonForTechnicalDrawing(const std::vector<cv::Point2f> &polygon,
 
   std::vector<cv::Point2f> simplified = polygon;
   const float safe_mm_per_px = std::max(1e-4f, mm_per_px);
-  const float min_edge_px = std::max(5.0f, 8.0f / safe_mm_per_px);
-  const float collinear_tol_deg = 15.0f;
+  const float min_edge_px = std::max(2.0f, 3.0f / safe_mm_per_px);
+  const float collinear_tol_deg = 5.0f;
 
   const size_t max_iterations = simplified.size() * 2U;
   for (size_t iter = 0; iter < max_iterations && simplified.size() > 3;
@@ -730,7 +730,7 @@ simplifyPolygonForTechnicalDrawing(const std::vector<cv::Point2f> &polygon,
           std::fabs(180.0f - angle) <= collinear_tol_deg;
       const bool tiny_kink =
           ((len_prev < min_edge_px) || (len_next < min_edge_px)) &&
-          (std::fabs(180.0f - angle) <= 35.0f);
+          (std::fabs(180.0f - angle) <= 15.0f);
 
       if (nearly_collinear || tiny_kink) {
         simplified.erase(simplified.begin() + static_cast<std::ptrdiff_t>(i));
@@ -1191,7 +1191,7 @@ detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
     const cv::Point2f &pa = polygon[i];
     const cv::Point2f &pb = polygon[(i + 1) % np];
     const float edge_len = static_cast<float>(cv::norm(pb - pa));
-    if (edge_len < 15.0f) {
+    if (edge_len < 8.0f) {
       continue;
     }
 
@@ -1295,6 +1295,7 @@ void writeMeasurementDetailsJson(const std::string &json_path,
                                  const std::vector<float> &edges_mm,
                                  const std::vector<float> &angles_deg,
                                  const std::vector<float> &hole_radii_mm,
+                                 const std::vector<float> &semi_circle_radii_mm,
                                  float perimeter_mm, float area_mm2) {
   std::ofstream out(json_path, std::ios::trunc);
   if (!out.is_open()) {
@@ -1333,6 +1334,13 @@ void writeMeasurementDetailsJson(const std::string &json_path,
       out << ", ";
     out << hole_radii_mm[i];
   }
+  out << "],\n";
+  out << "  \"semiCircleRadiiMm\": [";
+  for (size_t i = 0; i < semi_circle_radii_mm.size(); ++i) {
+    if (i > 0)
+      out << ", ";
+    out << semi_circle_radii_mm[i];
+  }
   out << "]\n";
   out << "}\n";
 }
@@ -1354,6 +1362,7 @@ MeasurementResult process_image(const char *input_path,
   std::vector<float> edges_mm;
   std::vector<float> angles_deg;
   std::vector<float> hole_radii_mm;
+  std::vector<float> semi_circle_radii_mm;
   float perimeter_mm = 0.0f;
   float area_mm2 = 0.0f;
 
@@ -1698,6 +1707,14 @@ MeasurementResult process_image(const char *input_path,
       const std::vector<EdgeArcInfo> edge_arcs =
           detectEdgeArcs(polygon, best_contour_global, metric_scale);
 
+      // Preencher edges_mm apenas com arestas que NÃO são arcos
+      edges_mm.clear();
+      for (size_t i = 0; i < polygon_edges_mm.size(); ++i) {
+        if (!edge_arcs[i].is_arc) {
+          edges_mm.push_back(polygon_edges_mm[i]);
+        }
+      }
+
       // Detectar furos internos (círculos completos dentro da peça)
       const std::vector<HoleCircle> holes = detectHoleCircles(
           roi_gray, roi_rect, best_contour_global, metric_scale);
@@ -1764,6 +1781,7 @@ MeasurementResult process_image(const char *input_path,
         // Anotar o raio do arco
         const float r_mm = radiusMm(merged_radius, metric_scale);
         drawCircleDimension(flat_image, merged_center, merged_radius, r_mm);
+        semi_circle_radii_mm.push_back(r_mm);
       }
 
       // ===== Desenhar furos internos (círculos completos) =====
@@ -1890,8 +1908,8 @@ MeasurementResult process_image(const char *input_path,
   cv::imwrite(output_path, flat_image);
   writeMeasurementDetailsJson(std::string(output_path) + ".json",
                               result.calibration_success, result.object_found,
-                              edges_mm, angles_deg, hole_radii_mm, perimeter_mm,
-                              area_mm2);
+                              edges_mm, angles_deg, hole_radii_mm,
+                              semi_circle_radii_mm, perimeter_mm, area_mm2);
 
   return result;
 }

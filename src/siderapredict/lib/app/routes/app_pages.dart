@@ -9,6 +9,7 @@ import 'package:siderapredict/app/features/inspection/view/validacao_page.dart';
 import 'package:siderapredict/app/features/menu/view/menu_principal_page.dart';
 import 'package:siderapredict/app/features/reports/view/historico_page.dart';
 import 'package:siderapredict/app/features/splash/view/splash_page.dart';
+import 'package:siderapredict/app/features/settings/view/settings_page.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/scanner_viewmodel.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/analysis_viewmodel.dart';
@@ -111,6 +112,12 @@ class AppPages {
             update: (context, inspection, previous) => previous!,
             child: const HistoricoPage(),
           ),
+          settings: settings,
+        );
+
+      case AppRoutes.settings:
+        return MaterialPageRoute<void>(
+          builder: (_) => const SettingsPage(),
           settings: settings,
         );
 

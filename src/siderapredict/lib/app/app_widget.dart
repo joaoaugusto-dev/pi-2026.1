@@ -14,6 +14,9 @@ import 'package:siderapredict/app/core/services/report_export_service.dart';
 import 'package:siderapredict/app/core/theme/theme.dart';
 import 'package:siderapredict/app/features/inspection/data/measurement_repository.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
+import 'package:siderapredict/app/core/services/settings_service.dart';
+import 'package:siderapredict/app/features/settings/viewmodel/settings_viewmodel.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final statusBarStyle = SystemUiOverlayStyle(
   statusBarColor: primaryColor,
@@ -22,10 +25,17 @@ final statusBarStyle = SystemUiOverlayStyle(
 );
 
 class AppWidget extends StatelessWidget {
-  AppWidget({super.key, required List<CameraDescription> cameras})
-    : _viewModel = _buildViewModel(cameras);
+  AppWidget({
+    super.key,
+    required List<CameraDescription> cameras,
+    required SharedPreferences sharedPreferences,
+  }) : _viewModel = _buildViewModel(cameras),
+       _settingsViewModel = SettingsViewModel(
+         settingsService: SettingsService(sharedPreferences),
+       );
 
   final InspectionViewModel _viewModel;
+  final SettingsViewModel _settingsViewModel;
 
   static InspectionViewModel _buildViewModel(List<CameraDescription> cameras) {
     final firestore = FirestoreService(
@@ -54,26 +64,34 @@ class AppWidget extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<InspectionViewModel>.value(value: _viewModel),
+        ChangeNotifierProvider<SettingsViewModel>.value(value: _settingsViewModel),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Sidera Predict',
-        theme: ThemeData(
-          useMaterial3: true,
-          appBarTheme: AppBarTheme(
-            systemOverlayStyle: statusBarStyle,
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
-          ),
-        ),
-        builder: (context, child) {
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: statusBarStyle,
-            child: child ?? const SizedBox.shrink(),
+      child: Consumer<SettingsViewModel>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Sidera Predict',
+            theme: settings.currentTheme,
+            themeMode: settings.themeMode,
+            builder: (context, child) {
+              final isDark = settings.isDarkMode;
+              final isHighContrast = settings.isHighContrast;
+              // If it's Dark Mode OR High Contrast, the AppBar is black, so icons should be light
+              final shouldUseLightIcons = isDark || isHighContrast;
+              
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: statusBarStyle.copyWith(
+                  statusBarColor: settings.currentTheme.appBarTheme.backgroundColor,
+                  statusBarIconBrightness: shouldUseLightIcons ? Brightness.light : Brightness.dark,
+                  statusBarBrightness: shouldUseLightIcons ? Brightness.dark : Brightness.light,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            initialRoute: AppRoutes.splash,
+            onGenerateRoute: AppPages.onGenerateRoute,
           );
         },
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: AppPages.onGenerateRoute,
       ),
     );
   }

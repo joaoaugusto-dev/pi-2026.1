@@ -98,7 +98,7 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
         : 'Aguardando medida válida';
 
     return Scaffold(
-      backgroundColor: backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: buildAppBar(
         context: context,
         title: 'Validação',
@@ -143,6 +143,12 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
           },
         ),
       ),
+      bottomNavigationBar: _buildBottomButtons(
+        context,
+        viewModel,
+        draft,
+        isLoading,
+      ),
     );
   }
 
@@ -154,6 +160,11 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
     String primaryDisplay,
     String primaryLabel,
   ) {
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -166,13 +177,16 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               height: 240,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: whiteColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: subtleShadows,
-                border: Border.all(color: whiteColor, width: 4),
+                color: theme.colorScheme.surface,
+                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(20),
+                boxShadow: isHighContrast ? null : subtleShadows,
+                border: Border.all(
+                  color: isHighContrast ? theme.colorScheme.primary : theme.colorScheme.surface, 
+                  width: isHighContrast ? 2 : 4,
+                ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(14),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -180,23 +194,31 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                         ? Image.file(
                             File(draft.processedImagePath),
                             fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Center(
-                              child: Text('Imagem indisponível'),
+                            errorBuilder: (_, _, _) => Center(
+                              child: Text(
+                                'Imagem indisponível',
+                                style: TextStyle(color: theme.colorScheme.onSurface),
+                              ),
                             ),
                           )
-                        : const Center(child: Text('Imagem indisponível')),
+                        : Center(
+                            child: Text(
+                              'Imagem indisponível',
+                              style: TextStyle(color: theme.colorScheme.onSurface),
+                            ),
+                          ),
                     Positioned(
                       right: 12,
                       top: 12,
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: blackColor.withValues(alpha: 0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.zoom_out_map,
-                          color: whiteColor,
+                          color: Colors.white,
                           size: 18,
                         ),
                       ),
@@ -224,11 +246,11 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       primaryDisplay,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 52,
                         fontWeight: FontWeight.w900,
-                        color: primaryColor,
-                        shadows: textShadows,
+                        color: theme.colorScheme.primary,
+                        shadows: isHighContrast ? null : textShadows,
                         letterSpacing: -1,
                       ),
                     ),
@@ -236,7 +258,7 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                   Text(
                     primaryLabel.toUpperCase(),
                     style: TextStyle(
-                      color: darkTextColor.withValues(alpha: 0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,
@@ -254,9 +276,12 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
         Container(
           padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
           decoration: BoxDecoration(
-            color: whiteColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: subtleShadows,
+            color: theme.colorScheme.surface,
+            borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+            boxShadow: isHighContrast ? null : subtleShadows,
+            border: isHighContrast 
+                ? Border.all(color: theme.colorScheme.primary, width: 2) 
+                : null,
           ),
           child: Row(
             children: [
@@ -264,15 +289,15 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                 child: TextField(
                   controller: _pieceNameController,
                   focusNode: _pieceNameFocus,
-                  style: const TextStyle(
-                    color: darkTextColor,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: InputDecoration(
                     labelText: 'IDENTIFICAÇÃO DA PEÇA',
                     labelStyle: TextStyle(
-                      color: darkTextColor.withValues(alpha: 0.4),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
@@ -286,11 +311,11 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
-                  color: backgroundLight,
+                  color: isHighContrast ? Colors.transparent : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.edit_note, color: primaryColor),
+                  icon: Icon(Icons.edit_note, color: theme.colorScheme.primary),
                   onPressed: () =>
                       FocusScope.of(context).requestFocus(_pieceNameFocus),
                 ),
@@ -339,21 +364,28 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
-                color: darkTextColor.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: whiteColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: subtleShadows,
+                color: theme.colorScheme.surface,
+                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+                boxShadow: isHighContrast ? null : subtleShadows,
+                border: isHighContrast 
+                    ? Border.all(color: theme.colorScheme.primary, width: 2) 
+                    : null,
               ),
               child: Column(
                 children: [
                   for (int i = 0; i < draft.segments.length; i++) ...[
-                    if (i > 0) Divider(height: 1, color: backgroundLight),
+                    if (i > 0) 
+                      Divider(
+                        height: 1, 
+                        color: isHighContrast ? theme.colorScheme.primary : Colors.grey.shade200,
+                      ),
                     ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -361,24 +393,25 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                       ),
                       title: Text(
                         draft.segments[i].label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       subtitle: Text(
                         draft.segments[i].type.label.toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
-                          color: darkTextColor.withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       trailing: Text(
                         draft.segments[i].displayValue,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          color: primaryColor,
+                          color: theme.colorScheme.primary,
                           fontSize: 16,
                         ),
                       ),
@@ -394,24 +427,27 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: whiteColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: subtleShadows,
-              border: Border.all(color: paletteRed.withValues(alpha: 0.3)),
+              color: theme.colorScheme.surface,
+              borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+              boxShadow: isHighContrast ? null : subtleShadows,
+              border: Border.all(
+                color: isHighContrast ? theme.colorScheme.primary : paletteRed.withValues(alpha: 0.3),
+                width: isHighContrast ? 2 : 1,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.warning_amber_rounded,
-                  color: paletteRed,
+                  color: isHighContrast ? theme.colorScheme.primary : paletteRed,
                   size: 32,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     _getErrorMessage(draft),
-                    style: const TextStyle(
-                      color: darkTextColor,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -422,89 +458,121 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
           ),
         ],
 
-        const SizedBox(height: 40),
-
-        
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: SizedBox(
-                height: 64,
-                child: OutlinedButton(
-                  onPressed: isLoading ? null : _retake,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: darkTextColor.withValues(alpha: 0.6),
-                    side: BorderSide(
-                      color: darkTextColor.withValues(alpha: 0.1),
-                      width: 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'REFAZER',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 3,
-              child: Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ElevatedButton(
-                  onPressed: (isLoading || !draft.isValidMeasurement)
-                      ? null
-                      : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: confirmGreen,
-                    foregroundColor: whiteColor,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            color: whiteColor,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.check_circle_outline, color: whiteColor),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'SALVAR',
-                              style: TextStyle(
-                                color: whiteColor,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 20),
       ],
+    );
+  }
+
+  Widget _buildBottomButtons(
+    BuildContext context,
+    ValidationViewModel viewModel,
+    MeasurementDraft draft,
+    bool isLoading,
+  ) {
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16, 
+        12, 
+        16, 
+        MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom + 8 : 20
+      ),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          top: BorderSide(
+            color: isHighContrast ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            width: isHighContrast ? 2 : 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: SizedBox(
+              height: 60,
+              child: OutlinedButton(
+                onPressed: isLoading ? null : _retake,
+                style: theme.outlinedButtonTheme.style ?? OutlinedButton.styleFrom(
+                  foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  side: BorderSide(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                    width: 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'REFAZER',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+              ),
+              child: ElevatedButton(
+                onPressed: (isLoading || !draft.isValidMeasurement)
+                    ? null
+                    : _save,
+                style: theme.elevatedButtonTheme.style?.copyWith(
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.disabled)) return null;
+                    return isHighContrast ? theme.colorScheme.primary : confirmGreen;
+                  }),
+                ) ?? ElevatedButton.styleFrom(
+                  backgroundColor: confirmGreen,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: isLoading
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_outline, color: theme.colorScheme.onPrimary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'SALVAR',
+                            style: TextStyle(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

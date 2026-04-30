@@ -65,7 +65,7 @@ class _HistoricoPageState extends State<HistoricoPage> {
             child: Text(
               'Compartilhar',
               style: TextStyle(
-                color: primaryColor,
+                color: Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -75,7 +75,7 @@ class _HistoricoPageState extends State<HistoricoPage> {
               Navigator.of(context).pop();
               OpenFilex.open(file.path);
             },
-            style: FilledButton.styleFrom(backgroundColor: primaryColor),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
             child: const Text('Abrir'),
           ),
         ],
@@ -140,7 +140,7 @@ class _HistoricoPageState extends State<HistoricoPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: primaryColor),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
             child: const Text('Excluir'),
           ),
         ],
@@ -174,142 +174,98 @@ class _HistoricoPageState extends State<HistoricoPage> {
         final records = viewModel.history;
 
         return Scaffold(
-          backgroundColor: primaryColor,
+          appBar: buildAppBar(
+            context: context,
+            title: 'Histórico',
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                onPressed: _exportHistoryPdf,
+                tooltip: 'Exportar PDF Geral',
+              ),
+              IconButton(
+                icon: const Icon(Icons.table_chart_outlined),
+                onPressed: _exportHistoryExcel,
+                tooltip: 'Exportar Excel Geral',
+              ),
+            ],
+          ),
           body: SafeArea(
-            child: Container(
-              color: backgroundLight,
-              child: Column(
-                children: [
-                  
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    color: primaryColor,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        const Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    color: Theme.of(context).primaryColor,
+                    onRefresh: viewModel.loadHistory,
+                    child: records.isEmpty
+                        ? ListView(
                             children: [
-                              AppLogo(height: 22),
-                              SizedBox(width: 24),
-                              Flexible(
-                                child: Text(
-                                  'HISTÓRICO',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 2.0,
-                                    shadows: textShadows,
-                                  ),
+                              SizedBox(
+                                height: MediaQuery.of(context).size.height * 0.6,
+                                child: Center(
+                                  child: viewModel.isLoading
+                                      ? CircularProgressIndicator(
+                                          color: Theme.of(context).primaryColor,
+                                        )
+                                      : Text(
+                                          'Nenhuma medição registrada.',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
+                                            fontSize: 16,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.picture_as_pdf_outlined,
-                            color: Colors.white,
-                          ),
-                          onPressed: _exportHistoryPdf,
-                          tooltip: 'Exportar PDF Geral',
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.table_chart_outlined,
-                            color: Colors.white,
-                          ),
-                          onPressed: _exportHistoryExcel,
-                          tooltip: 'Exportar Excel Geral',
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  
-                  Expanded(
-                    child: RefreshIndicator(
-                      color: primaryColor,
-                      onRefresh: viewModel.loadHistory,
-                      child: records.isEmpty
-                          ? ListView(
-                              children: [
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height * 0.6,
-                                  child: Center(
-                                    child: viewModel.isLoading
-                                        ? const CircularProgressIndicator(
-                                            color: primaryColor,
-                                          )
-                                        : const Text(
-                                            'Nenhuma medição registrada.',
-                                            style: TextStyle(
-                                              color: darkTextColor,
-                                              fontSize: 16,
-                                            ),
-                                          ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: records.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final record = records[index];
+                              return Dismissible(
+                                key: ValueKey(record.id),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (_) =>
+                                    _confirmDeleteRecord(record),
+                                onDismissed: (_) => _deleteRecord(record),
+                                background: Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                  ),
+                                  child: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
                                 ),
-                              ],
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: records.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final record = records[index];
-                                return Dismissible(
-                                  key: ValueKey(record.id),
-                                  direction: DismissDirection.endToStart,
-                                  confirmDismiss: (_) =>
-                                      _confirmDeleteRecord(record),
-                                  onDismissed: (_) => _deleteRecord(record),
-                                  background: Container(
-                                    decoration: BoxDecoration(
-                                      color: primaryColor,
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                    ),
-                                    child: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.white,
-                                      size: 26,
-                                    ),
+                                child: _HistoryCard(
+                                  record: record,
+                                  dateLabel: _formatter.format(
+                                    record.createdAt.toLocal(),
                                   ),
-                                  child: _HistoryCard(
-                                    record: record,
-                                    dateLabel: _formatter.format(
-                                      record.createdAt.toLocal(),
-                                    ),
-                                    pieceOfDayLabel: _pieceOfDayLabel(record),
-                                    onTap: () => _openDetails(record.id),
-                                    onDownloadPdf: () =>
-                                        _exportSingleRecordPdf(record),
-                                    onDownloadExcel: () =>
-                                        _exportSingleRecordExcel(record),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
+                                  pieceOfDayLabel: _pieceOfDayLabel(record),
+                                  onTap: () => _openDetails(record.id),
+                                  onDownloadPdf: () =>
+                                      _exportSingleRecordPdf(record),
+                                  onDownloadExcel: () =>
+                                      _exportSingleRecordExcel(record),
+                                ),
+                              );
+                            },
+                          ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -336,9 +292,7 @@ class _HistoricoPageState extends State<HistoricoPage> {
                 ),
               );
             }
-
             final pieceOfDayLabel = _pieceOfDayLabel(record);
-
             return SafeArea(
               child: FractionallySizedBox(
                 heightFactor: 0.9,
@@ -347,7 +301,6 @@ class _HistoricoPageState extends State<HistoricoPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      
                       Center(
                         child: Container(
                           width: 40,
@@ -359,8 +312,6 @@ class _HistoricoPageState extends State<HistoricoPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -369,10 +320,10 @@ class _HistoricoPageState extends State<HistoricoPage> {
                               record.pieceName,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: darkTextColor,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -381,18 +332,18 @@ class _HistoricoPageState extends State<HistoricoPage> {
                             child: Text(
                               '${record.primaryValueMm.toStringAsFixed(3)} mm',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: primaryColor,
+                                color: Theme.of(context).primaryColor,
                               ),
                             ),
                           ),
                           IconButton(
                             onPressed: () => _exportSingleRecordPdf(record),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.picture_as_pdf_outlined,
-                              color: primaryColor,
+                              color: Theme.of(context).primaryColor,
                             ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -400,9 +351,9 @@ class _HistoricoPageState extends State<HistoricoPage> {
                           const SizedBox(width: 8),
                           IconButton(
                             onPressed: () => _exportSingleRecordExcel(record),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.table_chart_outlined,
-                              color: primaryColor,
+                              color: Theme.of(context).primaryColor,
                             ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -417,19 +368,20 @@ class _HistoricoPageState extends State<HistoricoPage> {
                         children: [
                           Text(
                             _formatter.format(record.createdAt.toLocal()),
-                            style: const TextStyle(color: darkTextColor),
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface),
                           ),
                           if (pieceOfDayLabel != null)
                             Text(
                               pieceOfDayLabel,
-                              style: const TextStyle(color: darkTextColor),
+                              style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
                             ),
                           _AiStatusBadge(status: record.aiReportStatus),
                         ],
                       ),
                       const Divider(height: 20),
-
-                      
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
@@ -442,11 +394,12 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                 enableZoom: true,
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'Resumo',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: darkTextColor,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                   shadows: textShadows,
                                 ),
                               ),
@@ -473,11 +426,12 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                 'Escala: ${record.draft.scaleMicronsPerPx?.toStringAsFixed(3) ?? '-'} µm/px',
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'Segmentos medidos',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: darkTextColor,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                   shadows: textShadows,
                                 ),
                               ),
@@ -496,11 +450,12 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                   ),
                                 ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'Relatório IA',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: darkTextColor,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                   shadows: textShadows,
                                 ),
                               ),
@@ -519,33 +474,32 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                       ? 'Relatório indisponível no momento.'
                                       : record.aiReport,
                                   selectable: true,
-                                  styleSheet:
-                                      MarkdownStyleSheet.fromTheme(
-                                        Theme.of(context),
-                                      ).copyWith(
-                                        p: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(height: 1.45),
-                                        h1: Theme.of(context)
-                                            .textTheme
-                                            .titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                        h2: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                        h3: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
+                                  styleSheet: MarkdownStyleSheet.fromTheme(
+                                    Theme.of(context),
+                                  ).copyWith(
+                                    p: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(height: 1.45),
+                                    h1: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                    h2: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                    h3: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
                                 ),
                             ],
                           ),
@@ -589,7 +543,7 @@ class _HistoryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: whiteColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: subtleShadows,
         ),
@@ -605,10 +559,10 @@ class _HistoryCard extends StatelessWidget {
                     record.pieceName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
-                      color: darkTextColor,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -647,9 +601,9 @@ class _HistoryCard extends StatelessWidget {
                 Text(
                   '${record.primaryValueMm.toStringAsFixed(3)} mm',
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: primaryColor,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -657,10 +611,10 @@ class _HistoryCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.picture_as_pdf_outlined,
                         size: 20,
-                        color: primaryColor,
+                        color: Theme.of(context).primaryColor,
                       ),
                       onPressed: onDownloadPdf,
                       padding: EdgeInsets.zero,
@@ -669,10 +623,10 @@ class _HistoryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.table_chart_outlined,
                         size: 20,
-                        color: primaryColor,
+                        color: Theme.of(context).primaryColor,
                       ),
                       onPressed: onDownloadExcel,
                       padding: EdgeInsets.zero,
@@ -745,18 +699,18 @@ class _HistoryRecordImageState extends State<_HistoryRecordImage> {
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
-        color: backgroundLight,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
       child: _imageProvider == null
-          ? const Icon(Icons.straighten, color: primaryColor)
+          ? Icon(Icons.straighten, color: Theme.of(context).primaryColor)
           : Image(
               image: _imageProvider!,
               fit: BoxFit.cover,
               gaplessPlayback: true,
               errorBuilder: (_, _, _) =>
-                  const Icon(Icons.broken_image_outlined, color: primaryColor),
+                  Icon(Icons.broken_image_outlined, color: Theme.of(context).primaryColor),
             ),
     );
 
@@ -807,7 +761,7 @@ class _AiStatusBadge extends StatelessWidget {
       AiReportStatus.pending => ('IA na fila', const Color(0xFF7F8C8D)),
       AiReportStatus.generating => ('IA gerando', paletteRed),
       AiReportStatus.completed => ('IA concluída', confirmGreen),
-      AiReportStatus.failed => ('IA com fallback', primaryColor),
+      AiReportStatus.failed => ('IA com fallback', Theme.of(context).primaryColor),
     };
 
     return Container(

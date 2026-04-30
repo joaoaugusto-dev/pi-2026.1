@@ -50,6 +50,11 @@ class _InfoCardState extends State<InfoCard> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
+
     return FadeTransition(
       opacity: _fade,
       child: SlideTransition(
@@ -58,9 +63,12 @@ class _InfoCardState extends State<InfoCard> with SingleTickerProviderStateMixin
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           padding: const EdgeInsets.all(14.0),
           decoration: BoxDecoration(
-            color: whiteColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: subtleShadows,
+            color: theme.colorScheme.surface,
+            borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(12),
+            boxShadow: isHighContrast ? null : subtleShadows,
+            border: isHighContrast 
+                ? Border.all(color: theme.colorScheme.primary, width: 2) 
+                : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,8 +76,8 @@ class _InfoCardState extends State<InfoCard> with SingleTickerProviderStateMixin
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(
-                      color: darkTextColor,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
                       fontSize: 16,
                     ),
                     children: [

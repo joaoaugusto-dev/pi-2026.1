@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:siderapredict/app/routes/app_pages.dart';
@@ -13,41 +12,39 @@ class MenuPrincipalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: primaryColor,
-        statusBarIconBrightness: Brightness.light,
-      ),
-    );
-
     final viewModel = context.read<InspectionViewModel>();
     final configIssues = AppConfig.validationMessages;
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
 
     return Scaffold(
-      backgroundColor: primaryColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Container(
-          color: backgroundLight,
+        child: SingleChildScrollView(
           child: Column(
             children: [
               
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 24),
-                color: primaryColor,
-                child: const Row(
+                color: theme.brightness == Brightness.light 
+                    ? theme.primaryColor 
+                    : theme.appBarTheme.backgroundColor,
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    AppLogo(height: 26),
-                    SizedBox(width: 24),
+                    AppLogo(height: 26, color: theme.appBarTheme.foregroundColor),
+                    const SizedBox(width: 24),
                     Text(
                       'MENU PRINCIPAL',
                       style: TextStyle(
-                        color: whiteColor,
+                        color: theme.appBarTheme.foregroundColor,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2.5,
-                        shadows: textShadows,
+                        shadows: isHighContrast ? null : textShadows,
                       ),
                     ),
                   ],
@@ -62,18 +59,18 @@ class MenuPrincipalPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4E5),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE6B566)),
+                      color: isHighContrast ? Colors.transparent : const Color(0xFFFFF4E5),
+                      borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(14),
+                      border: Border.all(color: isHighContrast ? theme.colorScheme.primary : const Color(0xFFE6B566)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Ajustes pendentes do .env',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF7A4D00),
+                            color: isHighContrast ? theme.colorScheme.onSurface : const Color(0xFF7A4D00),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -82,8 +79,8 @@ class MenuPrincipalPage extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
                               '• $issue',
-                              style: const TextStyle(
-                                color: Color(0xFF7A4D00),
+                              style: TextStyle(
+                                color: isHighContrast ? theme.colorScheme.onSurface : const Color(0xFF7A4D00),
                                 height: 1.3,
                               ),
                             ),
@@ -117,8 +114,10 @@ class MenuPrincipalPage extends StatelessWidget {
               const SizedBox(height: 30),
 
               
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                spacing: 20,
+                runSpacing: 20,
+                alignment: WrapAlignment.center,
                 children: [
                   SizedBox(
                     width: 175,
@@ -130,67 +129,19 @@ class MenuPrincipalPage extends StatelessWidget {
                           Navigator.of(context).pushNamed(AppRoutes.history),
                     ),
                   ),
-                  const SizedBox(width: 20),
                   SizedBox(
                     width: 175,
                     height: 165,
                     child: _MenuCard(
-                      icon: Icons.info_outline,
-                      title: 'SOBRE',
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            title: const Row(
-                              children: [
-                                AppLogo(height: 22, color: primaryColor),
-                                SizedBox(width: 24),
-                                Flexible(
-                                  child: Text(
-                                    'Sidera Predict',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: darkTextColor,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            content: const Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Inspeção dimensional com OpenCV + IA.'),
-                                SizedBox(height: 12),
-                                Text(
-                                  'Versão 1.0',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Fechar'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                      icon: Icons.settings,
+                      title: 'CONFIGURAÇÕES',
+                      onTap: () =>
+                          Navigator.of(context).pushNamed(AppRoutes.settings),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -214,27 +165,39 @@ class _MenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: whiteColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: subtleShadows,
+          color: theme.colorScheme.surface,
+          borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(20),
+          boxShadow: isHighContrast ? null : subtleShadows,
+          border: isHighContrast 
+              ? Border.all(color: theme.colorScheme.primary, width: 2) 
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: darkTextColor),
+            Icon(
+              icon,
+              size: 40,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: darkTextColor,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                shadows: textShadows,
+                shadows: isHighContrast ? null : textShadows,
               ),
             ),
           ],

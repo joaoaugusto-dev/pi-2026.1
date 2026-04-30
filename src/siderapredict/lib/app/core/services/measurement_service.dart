@@ -21,8 +21,9 @@ class MeasurementService {
         );
 
     final edges = _toDoubleList(payload['edgesMm']);
-    final semicircles = _toDoubleList(payload['semiCircleRadiiMm']);
+    final semicircles = _toDoubleList(payload['semiCircleRadiiMm'] ?? payload['semicircleRadiiMm']);
     final holes = _toDoubleList(payload['holeRadiiMm']);
+    final angles = _toDoubleList(payload['anglesDeg']);
 
     final segments = <PieceSegmentMeasurement>[
       PieceSegmentMeasurement(
@@ -35,16 +36,11 @@ class MeasurementService {
         label: 'Altura geral',
         valueMm: (payload['height'] as num? ?? 0).toDouble(),
       ),
-      for (int i = 0; i < edges.length; i++)
-        PieceSegmentMeasurement(
-          type: PieceSegmentType.edge,
-          label: 'Aresta ${i + 1}',
-          valueMm: edges[i],
-        ),
+      // Prioritize Semicircles, Holes and Angles
       for (int i = 0; i < semicircles.length; i++)
         PieceSegmentMeasurement(
           type: PieceSegmentType.semicircle,
-          label: 'Semicirculo ${i + 1}',
+          label: 'Semicírculo ${i + 1}',
           valueMm: semicircles[i],
           isRadius: true,
         ),
@@ -55,6 +51,22 @@ class MeasurementService {
           valueMm: holes[i],
           isRadius: true,
         ),
+      for (int i = 0; i < angles.length; i++)
+        PieceSegmentMeasurement(
+          type: PieceSegmentType.angle,
+          label: 'Ângulo ${i + 1}',
+          valueMm: angles[i],
+          isAngle: true,
+        ),
+      // Show all edges without filtering
+      ...edges
+          .asMap()
+          .entries
+          .map((entry) => PieceSegmentMeasurement(
+                type: PieceSegmentType.edge,
+                label: 'Aresta ${entry.key + 1}',
+                valueMm: entry.value,
+              )),
     ];
 
     return MeasurementDraft(
