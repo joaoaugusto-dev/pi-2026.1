@@ -20,6 +20,10 @@ class _CameraOverlayState extends State<CameraOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
     
     const double barSensitivity = 12.0;
     final double horizontalAlign = (widget.rollDegrees / barSensitivity).clamp(
@@ -39,9 +43,11 @@ class _CameraOverlayState extends State<CameraOverlay> {
           left: 60,
           right: 60,
           child: _buildLevelBar(
+            context,
             isVertical: false,
             alignment: horizontalAlign,
             isFineAligned: widget.rollDegrees.abs() < 2.0,
+            isHighContrast: isHighContrast,
           ),
         ),
 
@@ -51,21 +57,31 @@ class _CameraOverlayState extends State<CameraOverlay> {
           top: 300, 
           bottom: 300,
           child: _buildLevelBar(
+            context,
             isVertical: true,
             alignment: verticalAlign,
             isFineAligned: widget.pitchDegrees.abs() < 2.0,
+            isHighContrast: isHighContrast,
           ),
         ),
 
         
         Center(
           child: Opacity(
-            opacity: 0.1,
+            opacity: isHighContrast ? 0.8 : 0.1,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Container(width: 1, height: 16, color: whiteColor),
-                Container(width: 16, height: 1, color: whiteColor),
+                Container(
+                  width: isHighContrast ? 2 : 1, 
+                  height: 16, 
+                  color: isHighContrast ? theme.colorScheme.primary : Colors.white,
+                ),
+                Container(
+                  width: 16, 
+                  height: isHighContrast ? 2 : 1, 
+                  color: isHighContrast ? theme.colorScheme.primary : Colors.white,
+                ),
               ],
             ),
           ),
@@ -74,20 +90,27 @@ class _CameraOverlayState extends State<CameraOverlay> {
     );
   }
 
-  Widget _buildLevelBar({
+  Widget _buildLevelBar(
+    BuildContext context, {
     required bool isVertical,
     required double alignment,
     required bool isFineAligned,
+    required bool isHighContrast,
   }) {
+    final theme = Theme.of(context);
+    final accentColor = isFineAligned 
+        ? (isHighContrast ? theme.colorScheme.primary : confirmGreen)
+        : (isHighContrast ? theme.colorScheme.onSurface : primaryColor);
+
     return Container(
-      width: isVertical ? 10 : null,
-      height: isVertical ? null : 10,
+      width: isVertical ? 14 : null,
+      height: isVertical ? null : 14,
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.1),
+        color: isHighContrast ? Colors.black : Colors.black.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(5),
         border: Border.all(
-          color: whiteColor.withValues(alpha: 0.1),
-          width: 0.5,
+          color: isHighContrast ? theme.colorScheme.primary : Colors.white.withValues(alpha: 0.2),
+          width: isHighContrast ? 2 : 0.5,
         ),
       ),
       child: Stack(
@@ -100,9 +123,9 @@ class _CameraOverlayState extends State<CameraOverlay> {
               children: List.generate(
                 5,
                 (i) => Container(
-                  width: 4,
-                  height: 0.5,
-                  color: whiteColor.withValues(alpha: 0.1),
+                  width: 6,
+                  height: 1,
+                  color: isHighContrast ? theme.colorScheme.primary : Colors.white.withValues(alpha: 0.1),
                 ),
               ),
             )
@@ -112,23 +135,23 @@ class _CameraOverlayState extends State<CameraOverlay> {
               children: List.generate(
                 5,
                 (i) => Container(
-                  width: 0.5,
-                  height: 4,
-                  color: whiteColor.withValues(alpha: 0.1),
+                  width: 1,
+                  height: 6,
+                  color: isHighContrast ? theme.colorScheme.primary : Colors.white.withValues(alpha: 0.1),
                 ),
               ),
             ),
 
           
           Container(
-            width: isVertical ? 10 : 20,
-            height: isVertical ? 20 : 10,
+            width: isVertical ? 14 : 24,
+            height: isVertical ? 24 : 14,
             decoration: BoxDecoration(
               border: Border.all(
                 color: isFineAligned
-                    ? confirmGreen.withValues(alpha: 0.3)
-                    : whiteColor.withValues(alpha: 0.05),
-                width: 0.5,
+                    ? accentColor.withValues(alpha: 0.5)
+                    : (isHighContrast ? theme.colorScheme.primary : Colors.white.withValues(alpha: 0.1)),
+                width: isHighContrast ? 2 : 0.5,
               ),
               borderRadius: BorderRadius.circular(4),
             ),
@@ -141,15 +164,15 @@ class _CameraOverlayState extends State<CameraOverlay> {
                 ? Alignment(0, alignment)
                 : Alignment(alignment, 0),
             child: Container(
-              width: isVertical ? 14 : 18,
-              height: isVertical ? 18 : 14,
+              width: isVertical ? 18 : 22,
+              height: isVertical ? 22 : 18,
               decoration: BoxDecoration(
-                color: isFineAligned ? confirmGreen : primaryColor,
-                borderRadius: BorderRadius.circular(4),
-                boxShadow: [
+                color: accentColor,
+                borderRadius: BorderRadius.circular(2),
+                border: isHighContrast ? Border.all(color: Colors.white, width: 2) : null,
+                boxShadow: isHighContrast ? null : [
                   BoxShadow(
-                    color: (isFineAligned ? confirmGreen : primaryColor)
-                        .withValues(alpha: 0.4),
+                    color: accentColor.withValues(alpha: 0.4),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),

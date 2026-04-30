@@ -5,4 +5,5 @@ abstract class AppRoutes {
   static const processing = '/processing';
   static const validation = '/validation';
   static const history = '/history';
+  static const settings = '/settings';
 }

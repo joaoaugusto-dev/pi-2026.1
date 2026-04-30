@@ -155,8 +155,7 @@ class OllamaReportService {
           return _sanitizeAiReport(raw);
         }
       }
-    } catch (_) {
-    }
+    } catch (_) {}
 
     return _fallbackReport(pieceName, draft, createdAt, 'Ollama indisponivel');
   }
@@ -167,42 +166,43 @@ class OllamaReportService {
     required DateTime createdAt,
   }) {
     final segments = draft.segments
-        .map((s) => '${s.label}: ${s.displayValue} [${s.type.storageValue}]')
+        .map((s) => '- **${s.label}**: **${s.displayValue}**')
         .join('\n');
     final measurementDate = _formatDate(createdAt);
     final measurementTime = _formatTime(createdAt);
     final pieceNumber = draft.pieceNumberOfDay?.toString() ?? 'n/a';
 
     return '''
-Voce e um inspetor dimensional industrial.
-Gere um relatorio tecnico curto, claro e objetivo em portugues brasileiro para a peca "$pieceName".
+Você é um Inspetor de Qualidade pragmático e técnico.
+Sua tarefa é analisar os dados da peça "$pieceName" e gerar um relatório de inspeção ultra-eficiente para o funcionário da linha de produção.
 
-Contexto da inspecao:
-- Data da inspecao: $measurementDate
-- Hora da inspecao: $measurementTime
-- Numero da peca do dia: $pieceNumber
+Contexto:
+- Peça: $pieceName (Nº $pieceNumber do dia)
+- Data/Hora: $measurementDate às $measurementTime
 
-Dados medidos:
-- Largura: ${draft.widthMm.toStringAsFixed(3)} mm
-- Altura: ${draft.heightMm.toStringAsFixed(3)} mm
-- Perimetro: ${draft.perimeterMm.toStringAsFixed(3)} mm
-- Altura: ${draft.areaMm2.toStringAsFixed(3)} mm2
-- Escala estimada: ${draft.scaleMicronsPerPx?.toStringAsFixed(3) ?? 'n/a'} micrometros/px
-- Segmentos:\n$segments
+Dados Brutos:
+- Dimensões: **${draft.widthMm.toStringAsFixed(3)}** x **${draft.heightMm.toStringAsFixed(3)}** mm
+- Perímetro/Área: **${draft.perimeterMm.toStringAsFixed(2)}** mm / **${draft.areaMm2.toStringAsFixed(2)}** mm²
+- Detalhamento:
+$segments
 
-Estruture a resposta em 3 partes com titulos:
-1) Resumo da medicao
-2) Analise tecnica
-3) Recomendacoes de processo
+Instruções Cruciais:
+1. LEITURA RÁPIDA: Use listas e negrito. O funcionário tem pouco tempo.
+2. ESTRUTURA OBRIGATÓRIA:
+   ## 1. Resumo Técnico
+   (Uma frase direta sobre a conformidade geral da peça baseada nas dimensões)
+   
+   ## 2. Pontos de Atenção
+   (Destaque furos, ângulos ou variações que é interessante conferir "$pieceName")
+   
+   ## 3. Detalhamento de Geometria
+   (Liste as medidas mais importantes (não deve ser TODAS) em bullet points, usando **negrito** para os valores)
 
-Regras obrigatorias:
-- Use apenas Markdown simples com titulos `##` e listas com `-`.
-- Nao repita a lista completa de medidas brutas na resposta.
-- Cite valores numericos apenas quando forem importantes para a conclusao.
-- Nao recrie uma secao de "dados medidos", "medidas coletadas" ou equivalente.
-- Mantenha cada secao curta, com no maximo 3 bullets.
-- Evite introducoes, conclusoes genericas e frases de preenchimento.
-- No resumo, mencione a data da inspecao e o numero da peca do dia quando disponiveis.
+Regras:
+- NÃO use introduções como "Aqui está o relatório".
+- NÃO repita dados brutos sem análise.
+- Use Markdown simples (##, -, **).
+- Seja técnico, direto e útil, mas sem dar OPINIÕES e RECOMENDAR AÇÕES.
 ''';
   }
 
@@ -223,9 +223,6 @@ Regras obrigatorias:
   ) {
     final data = _formatDate(createdAt);
     final hora = _formatTime(createdAt);
-    final numeroPeca = draft.pieceNumberOfDay != null
-        ? draft.pieceNumberOfDay.toString()
-        : 'n/a';
     final infoExtra = draft.extraInfo ?? '-';
     final resumoRapido = draft.quickStatus ?? 'n/a';
     final segmentosResumo = draft.segments.isEmpty
@@ -233,21 +230,23 @@ Regras obrigatorias:
         : '${draft.segments.length} segmento(s) identificado(s).';
 
     return '''
-## Resumo da medicao
-- Peca: $pieceName
-- Data: $data
-- Peca do dia: $numeroPeca
+## 1. Resumo da Medição
+- Peça: $pieceName
 - Status: $resumoRapido
+- Data: $data ($hora)
 
-## Analise tecnica
-- Medida principal: ${draft.primaryValueMm.toStringAsFixed(3)} mm
-- Informacoes extras: $infoExtra
+## 2. Alerta de Sistema
+- **Relatório Simplificado**: Ocorreu uma falha na geração via IA ($reason).
+- Valide as medidas manualmente abaixo.
+
+## 3. Detalhamento Técnico
+- Medida Principal: **${draft.primaryValueMm.toStringAsFixed(3)} mm**
 - Segmentos: $segmentosResumo
+- Info Extra: $infoExtra
 
-## Recomendacoes de processo
-- Validar visualmente a imagem processada antes de aprovar a peca.
-- Repetir a captura se houver duvida de calibracao ou contorno.
-- Observacao: relatorio sintetico gerado em modo fallback ($reason) as $hora.
+## 4. Ação Recomendada
+- Validar visualmente a imagem processada antes de aprovar a peça.
+- Repetir a captura se houver dúvida de calibração ou contorno.
 ''';
   }
 
@@ -267,14 +266,6 @@ Regras obrigatorias:
     text = text
         .replaceAllMapped(
           RegExp(
-            r'^[-*]\s*(largura|altura|per[ií]metro|area|área|escala estimada|segmentos medidos|medidas coletadas|dados medidos)\s*:.*(?:\n|$)',
-            multiLine: true,
-            caseSensitive: false,
-          ),
-          (_) => '',
-        )
-        .replaceAllMapped(
-          RegExp(
             r'^##\s*(dados medidos|medidas coletadas|medidas|dimensoes medidas)\s*$',
             multiLine: true,
             caseSensitive: false,
@@ -291,7 +282,7 @@ Regras obrigatorias:
 
     if (!text.contains('## ')) {
       return '''
-## Resumo da medicao
+## 1. Resumo da Medição
 $text
 '''
           .trim();

@@ -6,8 +6,8 @@ const Color paletteRed = Color(0xFF8E1717);
 const Color darkTextColor = Color(0xFF1E1E1E);
 const Color blackColor = Color(0xFF000000);
 const Color whiteColor = Color(0xFFFFFFFF);
-const Color backgroundLight = Color(0xFFF0F2F5);
-const Color backgroundLighter = Color(0xFFF0F2F5);
+const Color backgroundLight = Color(0xFFFFFFFF);
+const Color backgroundLighter = Color(0xFFFFFFFF);
 const Color confirmGreen = Color(0xFF12A347);
 
 
@@ -91,18 +91,23 @@ AppBar buildAppBar({
   List<Widget>? actions,
   double toolbarHeight = 80,
 }) {
+  final theme = Theme.of(context);
+  final isHighContrast = theme.brightness == Brightness.light 
+      ? theme.primaryColor == Colors.black 
+      : theme.primaryColor == Colors.yellow;
+
   return AppBar(
-    backgroundColor: primaryColor,
-    elevation: 0,
+    backgroundColor: theme.appBarTheme.backgroundColor,
+    elevation: isHighContrast ? 2 : 0,
     leading: showBack
         ? IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor),
             onPressed: () => Navigator.of(context).pop(),
           )
         : (showLogo
-            ? const Padding(
-                padding: EdgeInsets.only(left: 16),
-                child: Center(child: AppLogo(height: 24)),
+            ? Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Center(child: AppLogo(height: 24, color: theme.appBarTheme.foregroundColor)),
               )
             : null),
     automaticallyImplyLeading: false,
@@ -110,18 +115,18 @@ AppBar buildAppBar({
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const AppLogo(height: 22),
+              AppLogo(height: 22, color: theme.appBarTheme.foregroundColor),
               const SizedBox(width: 20),
               Flexible(
                 child: Text(
                   title.toUpperCase(),
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.appBarTheme.foregroundColor,
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
                     letterSpacing: 1.5,
-                    shadows: textShadows,
+                    shadows: isHighContrast ? null : textShadows,
                   ),
                 ),
               ),
@@ -129,19 +134,183 @@ AppBar buildAppBar({
           )
         : Text(
             title.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: theme.appBarTheme.foregroundColor,
               fontWeight: FontWeight.w900,
               fontSize: 20,
               letterSpacing: 2.0,
-              shadows: textShadows,
+              shadows: isHighContrast ? null : textShadows,
             ),
           ),
     centerTitle: true,
     toolbarHeight: toolbarHeight,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-    ),
+    shape: isHighContrast 
+      ? Border(bottom: BorderSide(color: theme.appBarTheme.foregroundColor!, width: 2))
+      : const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+        ),
     actions: actions,
   );
+}
+
+ThemeData buildLightTheme() {
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    primaryColor: primaryColor,
+    scaffoldBackgroundColor: whiteColor,
+    colorScheme: const ColorScheme.light(
+      primary: primaryColor,
+      onPrimary: whiteColor,
+      surface: whiteColor,
+      onSurface: darkTextColor,
+      surfaceContainerHighest: whiteColor,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: primaryColor,
+      foregroundColor: whiteColor,
+      elevation: 0,
+      centerTitle: true,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: primaryButtonStyle(),
+    ),
+  );
+}
+
+const Color primaryColorDark = Color(0xFFFF5252); // More vibrant red for Dark Mode
+
+ThemeData buildDarkTheme() {
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    primaryColor: primaryColorDark,
+    scaffoldBackgroundColor: const Color(0xFF121212),
+    colorScheme: const ColorScheme.dark(
+      primary: primaryColorDark,
+      onPrimary: whiteColor,
+      surface: Color(0xFF1E1E1E),
+      onSurface: whiteColor,
+      surfaceContainerHighest: Color(0xFF2C2C2C),
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1E1E1E),
+      foregroundColor: whiteColor,
+      elevation: 0,
+      centerTitle: true,
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: primaryButtonStyle(backgroundColor: primaryColorDark),
+    ),
+  );
+}
+
+ThemeData buildHighContrastTheme(bool isDark) {
+  if (isDark) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: Colors.yellow,
+      scaffoldBackgroundColor: Colors.black,
+      canvasColor: Colors.black,
+      colorScheme: const ColorScheme.dark(
+        primary: Colors.yellow,
+        onPrimary: Colors.black,
+        surface: Colors.black,
+        onSurface: Colors.white,
+        secondary: Colors.yellow,
+        onSecondary: Colors.black,
+        outline: Colors.yellow,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.yellow,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          color: Colors.yellow,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: Colors.yellow),
+      ),
+      dividerTheme: const DividerThemeData(color: Colors.yellow, thickness: 2),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.yellow,
+          foregroundColor: Colors.black,
+          disabledBackgroundColor: Colors.grey.shade800,
+          disabledForegroundColor: Colors.white,
+          side: const BorderSide(color: Colors.yellow, width: 2),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.yellow,
+          side: const BorderSide(color: Colors.yellow, width: 2),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.yellow, width: 2)),
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white, width: 3)),
+        labelStyle: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
+      ),
+    );
+  } else {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: Colors.black,
+      scaffoldBackgroundColor: Colors.white,
+      canvasColor: Colors.white,
+      colorScheme: const ColorScheme.light(
+        primary: Colors.black,
+        onPrimary: Colors.white,
+        surface: Colors.white,
+        onSurface: Colors.black,
+        secondary: Colors.black,
+        onSecondary: Colors.white,
+        outline: Colors.black,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      dividerTheme: const DividerThemeData(color: Colors.black, thickness: 2),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.grey.shade300,
+          disabledForegroundColor: Colors.grey.shade600,
+          side: const BorderSide(color: Colors.black, width: 2),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.black,
+          side: const BorderSide(color: Colors.black, width: 2),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black, width: 2)),
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue, width: 3)),
+        labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
 }

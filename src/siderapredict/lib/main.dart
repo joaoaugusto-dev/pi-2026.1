@@ -5,13 +5,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:siderapredict/app/app_widget.dart';
 import 'package:siderapredict/firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   SystemChrome.setSystemUIOverlayStyle(statusBarStyle);
 
   await SystemChrome.setPreferredOrientations([
@@ -50,5 +51,7 @@ Future<void> main() async {
     cameras = await availableCameras();
   } catch (_) {}
 
-  runApp(AppWidget(cameras: cameras));
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  runApp(AppWidget(cameras: cameras, sharedPreferences: sharedPreferences));
 }

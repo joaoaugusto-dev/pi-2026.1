@@ -14,37 +14,51 @@ class ScannerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ScannerViewModel>();
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light 
+        ? theme.primaryColor == Colors.black 
+        : theme.primaryColor == Colors.yellow;
 
     if (viewModel.cameras.isEmpty) {
       return Scaffold(
         appBar: buildAppBar(context: context, title: 'Câmera'),
-        body: const Center(
-          child: Text('Nenhuma câmera encontrada neste dispositivo.'),
+        body: Center(
+          child: Text(
+            'Nenhuma câmera encontrada neste dispositivo.',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: blackColor,
+      backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: ClipRRect(
           child: AppBar(
-            backgroundColor: primaryColor,
+            backgroundColor: isHighContrast ? Colors.black : primaryColor,
             elevation: 0,
             centerTitle: true,
-            title: const Text(
+            shape: isHighContrast 
+                ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+                : null,
+            title: Text(
               'INSPEÇÃO DIGITAL',
               style: TextStyle(
-                color: whiteColor,
+                color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
                 fontWeight: FontWeight.w900,
                 fontSize: 16,
                 letterSpacing: 2,
               ),
             ),
             leading: IconButton(
-              icon: const Icon(Icons.close, color: whiteColor, size: 28),
+              icon: Icon(
+                Icons.close, 
+                color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white, 
+                size: 28,
+              ),
               onPressed: () => Navigator.of(context).pop(),
             ),
             actions: const [
@@ -80,16 +94,16 @@ class ScannerPage extends StatelessWidget {
                           },
                         );
                       }
-                      return Center(
+                      return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const CircularProgressIndicator(color: whiteColor),
-                            const SizedBox(height: 16),
+                            CircularProgressIndicator(color: Colors.white),
+                            SizedBox(height: 16),
                             Text(
                               'INICIALIZANDO ÓPTICA...',
                               style: TextStyle(
-                                color: whiteColor.withValues(alpha: 0.5),
+                                color: Colors.white,
                                 fontSize: 10,
                                 letterSpacing: 2,
                               ),
@@ -100,13 +114,11 @@ class ScannerPage extends StatelessWidget {
                     },
                   )
                 : const Center(
-                    child: CircularProgressIndicator(color: whiteColor),
+                    child: CircularProgressIndicator(color: Colors.white),
                   ),
           ),
 
           CameraOverlay(rollDegrees: viewModel.rollDegrees, pitchDegrees: viewModel.pitchDegrees),
-
-
 
           Positioned(
             left: 0,
@@ -115,14 +127,18 @@ class ScannerPage extends StatelessWidget {
             child: Container(
               height: 180,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: isHighContrast ? null : LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    blackColor.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.8),
                   ],
                 ),
+                color: isHighContrast ? Colors.black : null,
+                border: isHighContrast 
+                    ? const Border(top: BorderSide(color: Colors.white, width: 2))
+                    : null,
               ),
               child: Stack(
                 alignment: Alignment.center,
@@ -135,16 +151,17 @@ class ScannerPage extends StatelessWidget {
                           onPressed: viewModel.toggleFlash,
                           icon: Icon(
                             _getFlashIcon(viewModel.flashMode),
-                            color: whiteColor,
-                            size: 28,
+                            color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
+                            size: 32,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'FLASH',
                           style: TextStyle(
-                            color: whiteColor,
+                            color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
                           ),
                         ),
                       ],
@@ -158,22 +175,27 @@ class ScannerPage extends StatelessWidget {
                       height: 84,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: whiteColor, width: 4),
+                        border: Border.all(
+                          color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white, 
+                          width: 4,
+                        ),
                       ),
                       padding: const EdgeInsets.all(6),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: viewModel.isCapturing ? paletteRed : whiteColor,
+                          color: viewModel.isCapturing 
+                            ? paletteRed 
+                            : (isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white),
                         ),
                         child: viewModel.isCapturing
-                            ? const Center(
+                            ? Center(
                                 child: SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
-                                    color: whiteColor,
+                                    color: isHighContrast ? Colors.black : Colors.white,
                                     strokeWidth: 3,
                                   ),
                                 ),
@@ -189,18 +211,19 @@ class ScannerPage extends StatelessWidget {
                       children: [
                         IconButton(
                           onPressed: () => _onPickFromGallery(context, viewModel),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.photo_library_outlined,
-                            color: whiteColor,
-                            size: 28,
+                            color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
+                            size: 32,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'GALERIA',
                           style: TextStyle(
-                            color: whiteColor,
+                            color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
                           ),
                         ),
                       ],

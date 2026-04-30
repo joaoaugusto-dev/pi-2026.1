@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum PieceSegmentType { edge, semicircle, hole, overallWidth, overallHeight }
+enum PieceSegmentType { edge, semicircle, hole, overallWidth, overallHeight, angle }
 
 enum AiReportStatus { pending, generating, completed, failed }
 
@@ -49,6 +49,8 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
         return 'Largura geral';
       case PieceSegmentType.overallHeight:
         return 'Altura geral';
+      case PieceSegmentType.angle:
+        return 'Ângulo';
     }
   }
 
@@ -64,6 +66,8 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
         return 'overall_width';
       case PieceSegmentType.overallHeight:
         return 'overall_height';
+      case PieceSegmentType.angle:
+        return 'angle';
     }
   }
 
@@ -77,6 +81,8 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
         return PieceSegmentType.overallWidth;
       case 'overall_height':
         return PieceSegmentType.overallHeight;
+      case 'angle':
+        return PieceSegmentType.angle;
       case 'hole':
       default:
         return PieceSegmentType.hole;
@@ -90,14 +96,17 @@ class PieceSegmentMeasurement {
     required this.label,
     required this.valueMm,
     this.isRadius = false,
+    this.isAngle = false,
   });
 
   final PieceSegmentType type;
   final String label;
   final double valueMm;
   final bool isRadius;
+  final bool isAngle;
 
   String get displayValue {
+    if (isAngle) return '${valueMm.toStringAsFixed(1)}°';
     final formatted = valueMm.toStringAsFixed(3);
     return isRadius ? 'R$formatted mm' : '$formatted mm';
   }
@@ -108,6 +117,7 @@ class PieceSegmentMeasurement {
       'label': label,
       'valueMm': valueMm,
       'isRadius': isRadius,
+      'isAngle': isAngle,
     };
   }
 
@@ -119,6 +129,7 @@ class PieceSegmentMeasurement {
       label: json['label'] as String? ?? 'Medida',
       valueMm: (json['valueMm'] as num? ?? 0).toDouble(),
       isRadius: json['isRadius'] as bool? ?? false,
+      isAngle: json['isAngle'] as bool? ?? false,
     );
   }
 }
