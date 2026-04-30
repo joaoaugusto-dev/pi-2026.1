@@ -22,6 +22,10 @@ class ValidationViewModel extends ChangeNotifier {
   final MeasurementDraft currentDraft;
 
   String pieceName = '';
+  ConformityStatus conformityStatus = ConformityStatus.ok;
+  String? nonConformityReason;
+  String? nonConformityObservation;
+
   bool get isSaving => _inspectionViewModel.isSaving;
   bool get isLoading => isSaving;
   String? get lastError => _inspectionViewModel.lastError;
@@ -31,8 +35,32 @@ class ValidationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateConformityStatus(ConformityStatus status) {
+    conformityStatus = status;
+    if (status == ConformityStatus.ok) {
+      nonConformityReason = null;
+      nonConformityObservation = null;
+    }
+    notifyListeners();
+  }
+
+  void updateNonConformityReason(String? reason) {
+    nonConformityReason = reason;
+    notifyListeners();
+  }
+
+  void updateNonConformityObservation(String? observation) {
+    nonConformityObservation = observation;
+    notifyListeners();
+  }
+
   Future<MeasurementRecord?> save() async {
-    return await _inspectionViewModel.saveCurrentDraft(pieceName: pieceName);
+    return await _inspectionViewModel.saveCurrentDraft(
+      pieceName: pieceName,
+      conformityStatus: conformityStatus,
+      nonConformityReason: nonConformityReason,
+      nonConformityObservation: nonConformityObservation,
+    );
   }
 
   void retake() {

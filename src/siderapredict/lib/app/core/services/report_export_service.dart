@@ -159,6 +159,16 @@ class ReportExportService {
                       _buildPdfInfoRow('Nome:', record.pieceName),
                       if (record.draft.pieceNumberOfDay != null)
                         _buildPdfInfoRow('Seq. Dia:', record.draft.pieceNumberOfDay.toString()),
+                      _buildPdfInfoRow(
+                        'Status:',
+                        record.conformityStatus == ConformityStatus.ok ? 'CONFORME' : 'NAO CONFORME',
+                        valueColor: record.conformityStatus == ConformityStatus.ok ? PdfColors.green : PdfColors.red,
+                      ),
+                      if (record.conformityStatus == ConformityStatus.nok) ...[
+                        _buildPdfInfoRow('Motivo:', record.nonConformityReason ?? 'N/A'),
+                        if (record.nonConformityObservation?.isNotEmpty ?? false)
+                          _buildPdfInfoRow('Obs:', record.nonConformityObservation!),
+                      ],
                       pw.SizedBox(height: 15),
 
                       _buildPdfSectionTitle('Dimensoes Gerais'),
@@ -253,14 +263,21 @@ class ReportExportService {
     );
   }
 
-  pw.Widget _buildPdfInfoRow(String label, String value) {
+  pw.Widget _buildPdfInfoRow(String label, String value, {PdfColor? valueColor}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 4),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
-          pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+              color: valueColor,
+            ),
+          ),
         ],
       ),
     );
@@ -358,10 +375,11 @@ class ReportExportService {
 
           content.add(
             pw.TableHelper.fromTextArray(
-              headers: ['Data/Hora', 'Peca', 'L (mm)', 'A (mm)', 'Area (mm2)'],
+              headers: ['Data/Hora', 'Peca', 'Status', 'L (mm)', 'A (mm)', 'Area (mm2)'],
               data: records.map((r) => [
                 dateFormat.format(r.createdAt.toLocal()),
                 r.pieceName,
+                r.conformityStatus == ConformityStatus.ok ? 'OK' : 'NOK',
                 r.draft.widthMm.toStringAsFixed(1),
                 r.draft.heightMm.toStringAsFixed(1),
                 r.draft.areaMm2.toStringAsFixed(0),
@@ -371,10 +389,11 @@ class ReportExportService {
               cellStyle: const pw.TextStyle(fontSize: 8),
               columnWidths: {
                 0: const pw.FlexColumnWidth(1.2),
-                1: const pw.FlexColumnWidth(2),
-                2: const pw.FlexColumnWidth(0.8),
-                3: const pw.FlexColumnWidth(0.8),
-                4: const pw.FlexColumnWidth(1),
+                1: const pw.FlexColumnWidth(1.8),
+                2: const pw.FlexColumnWidth(0.5),
+                3: const pw.FlexColumnWidth(0.7),
+                4: const pw.FlexColumnWidth(0.7),
+                5: const pw.FlexColumnWidth(0.8),
               },
             ),
           );
@@ -443,14 +462,42 @@ class ReportExportService {
                                 style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
                               ),
                               pw.SizedBox(height: 6),
-                              pw.Text(
+                               pw.Text(
                                 'Dimensoes: ${record.draft.widthMm.toStringAsFixed(2)} x ${record.draft.heightMm.toStringAsFixed(2)} mm',
                                 style: const pw.TextStyle(fontSize: 9),
-                              ),
-                              pw.Text(
+                                ),
+                                pw.Text(
                                 'Perimetro: ${record.draft.perimeterMm.toStringAsFixed(2)} mm | Area: ${record.draft.areaMm2.toStringAsFixed(0)} mm2',
                                 style: const pw.TextStyle(fontSize: 9),
-                              ),
+                                ),
+                                pw.SizedBox(height: 4),
+                                pw.Row(
+                                children: [
+                                    pw.Text(
+                                    'STATUS: ',
+                                    style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                                    ),
+                                    pw.Text(
+                                    record.conformityStatus == ConformityStatus.ok ? 'CONFORME' : 'NAO CONFORME',
+                                    style: pw.TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: pw.FontWeight.bold,
+                                        color: record.conformityStatus == ConformityStatus.ok ? PdfColors.green : PdfColors.red,
+                                    ),
+                                    ),
+                                ],
+                                ),
+                                if (record.conformityStatus == ConformityStatus.nok) ...[
+                                pw.Text(
+                                    'Motivo: ${record.nonConformityReason ?? 'N/A'}',
+                                    style: const pw.TextStyle(fontSize: 8),
+                                ),
+                                if (record.nonConformityObservation?.isNotEmpty ?? false)
+                                    pw.Text(
+                                    'Obs: ${record.nonConformityObservation}',
+                                    style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic),
+                                    ),
+                                ],
                             ],
                           ),
                         ),
@@ -517,6 +564,9 @@ class ReportExportService {
     final headers = <String>[
       'Data/Hora',
       'Peca',
+      'Status',
+      'Motivo Reprovacao',
+      'Observacao',
       'Largura (mm)',
       'Altura (mm)',
       'Perimetro (mm)',
@@ -565,6 +615,9 @@ class ReportExportService {
       sheet.appendRow(<CellValue>[
         TextCellValue(dateFormat.format(record.createdAt.toLocal())),
         TextCellValue(record.pieceName),
+        TextCellValue(record.conformityStatus == ConformityStatus.ok ? 'OK' : 'NOK'),
+        TextCellValue(record.nonConformityReason ?? ''),
+        TextCellValue(record.nonConformityObservation ?? ''),
         DoubleCellValue(record.draft.widthMm),
         DoubleCellValue(record.draft.heightMm),
         DoubleCellValue(record.draft.perimeterMm),

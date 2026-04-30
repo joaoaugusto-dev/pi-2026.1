@@ -57,6 +57,9 @@ class InspectionViewModel extends ChangeNotifier {
 
   Future<MeasurementRecord?> saveCurrentDraft({
     required String pieceName,
+    ConformityStatus conformityStatus = ConformityStatus.ok,
+    String? nonConformityReason,
+    String? nonConformityObservation,
   }) async {
     final draft = currentDraft;
     if (draft == null || !draft.isValidMeasurement) {
@@ -75,6 +78,9 @@ class InspectionViewModel extends ChangeNotifier {
       final saved = await _repository.saveMeasurement(
         pieceName: pieceName,
         draft: draft,
+        conformityStatus: conformityStatus,
+        nonConformityReason: nonConformityReason,
+        nonConformityObservation: nonConformityObservation,
       );
 
       history = _upsertHistory(history, saved);

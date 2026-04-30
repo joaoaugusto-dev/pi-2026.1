@@ -29,6 +29,9 @@ class OllamaReportService {
     required String pieceName,
     required MeasurementDraft draft,
     required DateTime createdAt,
+    ConformityStatus conformityStatus = ConformityStatus.ok,
+    String? nonConformityReason,
+    String? nonConformityObservation,
   }) async* {
     if (!isConfigured) {
       throw StateError(
@@ -40,6 +43,9 @@ class OllamaReportService {
       pieceName: pieceName,
       draft: draft,
       createdAt: createdAt,
+      conformityStatus: conformityStatus,
+      nonConformityReason: nonConformityReason,
+      nonConformityObservation: nonConformityObservation,
     );
     final request = http.Request('POST', Uri.parse('$baseUrl/api/generate'))
       ..headers['Content-Type'] = 'application/json'
@@ -110,6 +116,9 @@ class OllamaReportService {
     required String pieceName,
     required MeasurementDraft draft,
     required DateTime createdAt,
+    ConformityStatus conformityStatus = ConformityStatus.ok,
+    String? nonConformityReason,
+    String? nonConformityObservation,
   }) async {
     if (!isConfigured) {
       return _fallbackReport(
@@ -124,6 +133,9 @@ class OllamaReportService {
       pieceName: pieceName,
       draft: draft,
       createdAt: createdAt,
+      conformityStatus: conformityStatus,
+      nonConformityReason: nonConformityReason,
+      nonConformityObservation: nonConformityObservation,
     );
 
     try {
@@ -164,6 +176,9 @@ class OllamaReportService {
     required String pieceName,
     required MeasurementDraft draft,
     required DateTime createdAt,
+    required ConformityStatus conformityStatus,
+    String? nonConformityReason,
+    String? nonConformityObservation,
   }) {
     final segments = draft.segments
         .map((s) => '- **${s.label}**: **${s.displayValue}**')
@@ -173,36 +188,42 @@ class OllamaReportService {
     final pieceNumber = draft.pieceNumberOfDay?.toString() ?? 'n/a';
 
     return '''
-Você é um Inspetor de Qualidade pragmático e técnico.
-Sua tarefa é analisar os dados da peça "$pieceName" e gerar um relatório de inspeção ultra-eficiente para o funcionário da linha de produção.
+Você é um Assistente Técnico especializado em documentação de medições.
+Sua tarefa é sintetizar os dados da peça "$pieceName" em um resumo claro e objetivo.
 
 Contexto:
 - Peça: $pieceName (Nº $pieceNumber do dia)
 - Data/Hora: $measurementDate às $measurementTime
+- Status Registrado pelo Operador: **${conformityStatus == ConformityStatus.ok ? 'CONFORME' : 'NÃO CONFORME'}**
+${conformityStatus == ConformityStatus.nok ? '- Motivo da Reprovação (Informado): **$nonConformityReason**' : ''}
+${conformityStatus == ConformityStatus.nok && nonConformityObservation != null ? '- Observação do Operador: $nonConformityObservation' : ''}
 
-Dados Brutos:
-- Dimensões: **${draft.widthMm.toStringAsFixed(3)}** x **${draft.heightMm.toStringAsFixed(3)}** mm
-- Perímetro/Área: **${draft.perimeterMm.toStringAsFixed(2)}** mm / **${draft.areaMm2.toStringAsFixed(2)}** mm²
-- Detalhamento:
+Dados de Medição:
+- Dimensões Principais: **${draft.widthMm.toStringAsFixed(3)}** x **${draft.heightMm.toStringAsFixed(3)}** mm
+- Perímetro: **${draft.perimeterMm.toStringAsFixed(2)}** mm | Área: **${draft.areaMm2.toStringAsFixed(2)}** mm²
+- Amostra de Segmentos:
 $segments
 
 Instruções Cruciais:
-1. LEITURA RÁPIDA: Use listas e negrito. O funcionário tem pouco tempo.
-2. ESTRUTURA OBRIGATÓRIA:
-   ## 1. Resumo Técnico
-   (Uma frase direta sobre a conformidade geral da peça baseada nas dimensões)
-   
-   ## 2. Pontos de Atenção
-   (Destaque furos, ângulos ou variações que é interessante conferir "$pieceName")
-   
-   ## 3. Detalhamento de Geometria
-   (Liste as medidas mais importantes (não deve ser TODAS) em bullet points, usando **negrito** para os valores)
+1. NÃO JULGUE: Você não sabe quais são as tolerâncias da peça. Jamais diga que uma medida está "errada", "fora do padrão" ou "incorreta".
+2. RESUMO OBJETIVO: Descreva a peça e o registro de forma informativa, não avaliativa.
+3. NÃO REPITA TUDO: Não liste todas as medidas individuais. Foque na visão geral.
+
+Estrutura do Relatório:
+## 1. Resumo da Peça
+(Uma frase descrevendo a peça e o status do registro efetuado pelo operador)
+
+## 2. Destaques da Geometria
+(Descreva as características principais da peça, como dimensões externas e complexidade dos contornos, sem citar se estão certas ou erradas)
+
+## 3. Informações de Registro
+(Resuma os dados de data, hora e observações do operador de forma limpa)
 
 Regras:
 - NÃO use introduções como "Aqui está o relatório".
-- NÃO repita dados brutos sem análise.
-- Use Markdown simples (##, -, **).
-- Seja técnico, direto e útil, mas sem dar OPINIÕES e RECOMENDAR AÇÕES.
+- NÃO dê opiniões ou recomendações técnicas.
+- Use Markdown simples.
+- Mantenha um tom neutro e profissional.
 ''';
   }
 

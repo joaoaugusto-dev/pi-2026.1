@@ -267,6 +267,17 @@ class MeasurementDraft {
   }
 }
 
+enum ConformityStatus { ok, nok }
+
+extension ConformityStatusStorage on ConformityStatus {
+  String get storageValue => name;
+
+  static ConformityStatus fromStorage(String? raw) {
+    if (raw == 'nok') return ConformityStatus.nok;
+    return ConformityStatus.ok;
+  }
+}
+
 class MeasurementRecord {
   const MeasurementRecord({
     required this.id,
@@ -278,6 +289,9 @@ class MeasurementRecord {
     required this.draft,
     this.photoBase64,
     this.thumbnailBase64,
+    this.conformityStatus = ConformityStatus.ok,
+    this.nonConformityReason,
+    this.nonConformityObservation,
   });
 
   final String id;
@@ -289,6 +303,9 @@ class MeasurementRecord {
   final MeasurementDraft draft;
   final String? photoBase64;
   final String? thumbnailBase64;
+  final ConformityStatus conformityStatus;
+  final String? nonConformityReason;
+  final String? nonConformityObservation;
 
   bool get isAiReportStreaming =>
       aiReportStatus == AiReportStatus.pending ||
@@ -305,6 +322,9 @@ class MeasurementRecord {
     String? photoBase64,
     String? thumbnailBase64,
     bool clearPhotoBase64 = false,
+    ConformityStatus? conformityStatus,
+    String? nonConformityReason,
+    String? nonConformityObservation,
   }) {
     return MeasurementRecord(
       id: id ?? this.id,
@@ -318,6 +338,10 @@ class MeasurementRecord {
       thumbnailBase64: clearPhotoBase64
           ? null
           : (thumbnailBase64 ?? this.thumbnailBase64),
+      conformityStatus: conformityStatus ?? this.conformityStatus,
+      nonConformityReason: nonConformityReason ?? this.nonConformityReason,
+      nonConformityObservation:
+          nonConformityObservation ?? this.nonConformityObservation,
     );
   }
 
@@ -332,6 +356,9 @@ class MeasurementRecord {
       'photoBase64': photoBase64,
       'thumbnailBase64': thumbnailBase64,
       'draft': draft.toJson(),
+      'conformityStatus': conformityStatus.storageValue,
+      'nonConformityReason': nonConformityReason,
+      'nonConformityObservation': nonConformityObservation,
     };
   }
 
@@ -355,6 +382,11 @@ class MeasurementRecord {
       draft: MeasurementDraft.fromJson(draftMap),
       photoBase64: json['photoBase64'] as String?,
       thumbnailBase64: json['thumbnailBase64'] as String?,
+      conformityStatus: ConformityStatusStorage.fromStorage(
+        json['conformityStatus'] as String?,
+      ),
+      nonConformityReason: json['nonConformityReason'] as String?,
+      nonConformityObservation: json['nonConformityObservation'] as String?,
     );
   }
 
