@@ -146,9 +146,7 @@ AppBar buildAppBar({
     toolbarHeight: toolbarHeight,
     shape: isHighContrast 
       ? Border(bottom: BorderSide(color: theme.appBarTheme.foregroundColor!, width: 2))
-      : const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-        ),
+      : null,
     actions: actions,
   );
 }

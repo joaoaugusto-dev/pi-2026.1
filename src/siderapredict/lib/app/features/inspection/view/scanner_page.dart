@@ -36,35 +36,33 @@ class ScannerPage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
-        child: ClipRRect(
-          child: AppBar(
-            backgroundColor: isHighContrast ? Colors.black : primaryColor,
-            elevation: 0,
-            centerTitle: true,
-            shape: isHighContrast 
-                ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
-                : null,
-            title: Text(
-              'INSPEÇÃO DIGITAL',
-              style: TextStyle(
-                color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                letterSpacing: 2,
-              ),
+        child: AppBar(
+          backgroundColor: isHighContrast ? Colors.black : primaryColor,
+          elevation: 0,
+          centerTitle: true,
+          shape: isHighContrast 
+              ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
+              : null,
+          title: Text(
+            'INSPEÇÃO DIGITAL',
+            style: TextStyle(
+              color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              letterSpacing: 2,
             ),
-            leading: IconButton(
-              icon: Icon(
-                Icons.close, 
-                color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white, 
-                size: 28,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            actions: const [
-              SizedBox(width: 48),
-            ],
           ),
+          leading: IconButton(
+            icon: Icon(
+              Icons.close, 
+              color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white, 
+              size: 28,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          actions: const [
+            SizedBox(width: 48),
+          ],
         ),
       ),
       body: Stack(
