@@ -24,6 +24,10 @@ class MeasurementService {
     final semicircles = _toDoubleList(payload['semiCircleRadiiMm'] ?? payload['semicircleRadiiMm']);
     final holes = _toDoubleList(payload['holeRadiiMm']);
     final angles = _toDoubleList(payload['anglesDeg']);
+    final holeDiameters = _toDoubleList(payload['holeDiametersMm']);
+    final holeSpacings = _toDoubleList(payload['holeSpacingMm']);
+    final slotWidths = _toDoubleList(payload['slotWidthsMm']);
+    final slotLengths = _toDoubleList(payload['slotLengthsMm']);
 
     final segments = <PieceSegmentMeasurement>[
       PieceSegmentMeasurement(
@@ -36,7 +40,7 @@ class MeasurementService {
         label: 'Altura geral',
         valueMm: (payload['height'] as num? ?? 0).toDouble(),
       ),
-      // Prioritize Semicircles, Holes and Angles
+      // Semicircles (arcos parciais)
       for (int i = 0; i < semicircles.length; i++)
         PieceSegmentMeasurement(
           type: PieceSegmentType.semicircle,
@@ -44,13 +48,44 @@ class MeasurementService {
           valueMm: semicircles[i],
           isRadius: true,
         ),
-      for (int i = 0; i < holes.length; i++)
+      // Diameters (furos completos) — preferir sobre raios
+      for (int i = 0; i < holeDiameters.length; i++)
         PieceSegmentMeasurement(
-          type: PieceSegmentType.hole,
+          type: PieceSegmentType.diameter,
           label: 'Furo ${i + 1}',
-          valueMm: holes[i],
-          isRadius: true,
+          valueMm: holeDiameters[i],
+          isDiameter: true,
         ),
+      // Fallback: raios dos furos (se não tiver diâmetros)
+      if (holeDiameters.isEmpty)
+        for (int i = 0; i < holes.length; i++)
+          PieceSegmentMeasurement(
+            type: PieceSegmentType.hole,
+            label: 'Furo ${i + 1}',
+            valueMm: holes[i],
+            isRadius: true,
+          ),
+      // Slots (pílulas/cavidades)
+      for (int i = 0; i < slotWidths.length; i++)
+        PieceSegmentMeasurement(
+          type: PieceSegmentType.slot,
+          label: 'Slot ${i + 1} (largura)',
+          valueMm: slotWidths[i],
+        ),
+      for (int i = 0; i < slotLengths.length; i++)
+        PieceSegmentMeasurement(
+          type: PieceSegmentType.slot,
+          label: 'Slot ${i + 1} (compr.)',
+          valueMm: slotLengths[i],
+        ),
+      // Hole spacing (espaçamento entre furos)
+      for (int i = 0; i < holeSpacings.length; i++)
+        PieceSegmentMeasurement(
+          type: PieceSegmentType.spacing,
+          label: 'Espaço furo ${i + 1}→${i + 2}',
+          valueMm: holeSpacings[i],
+        ),
+      // Angles
       for (int i = 0; i < angles.length; i++)
         PieceSegmentMeasurement(
           type: PieceSegmentType.angle,
@@ -58,7 +93,7 @@ class MeasurementService {
           valueMm: angles[i],
           isAngle: true,
         ),
-      // Show all edges without filtering
+      // Edges
       ...edges
           .asMap()
           .entries

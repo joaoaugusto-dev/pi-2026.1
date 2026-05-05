@@ -11,6 +11,7 @@ import 'package:siderapredict/app/core/widgets/zoomable_image_overlay.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/validation_viewmodel.dart';
+import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
 
 class ValidacaoPage extends StatefulWidget {
   const ValidacaoPage({super.key, required this.draft});
@@ -44,7 +45,11 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
 
   Future<void> _save() async {
     final viewModel = context.read<ValidationViewModel>();
-    final record = await viewModel.save();
+    final authViewModel = context.read<AuthViewModel>();
+    
+    final record = await viewModel.save(
+      responsavel: authViewModel.userName,
+    );
 
     if (!mounted) return;
 
@@ -69,7 +74,9 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
   void _retake() {
     final viewModel = context.read<ValidationViewModel>();
     final inspectionViewModel = context.read<InspectionViewModel>();
+
     viewModel.retake();
+
     Navigator.of(context).pushReplacementNamed(
       AppRoutes.camera,
       arguments: CameraArgs(cameras: inspectionViewModel.availableCameras),
@@ -103,6 +110,16 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
         context: context,
         title: 'Validação',
         toolbarHeight: 86,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.menuPrincipal,
+              (route) => false,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -161,14 +178,13 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
     String primaryLabel,
   ) {
     final theme = Theme.of(context);
-    final isHighContrast = theme.brightness == Brightness.light 
-        ? theme.primaryColor == Colors.black 
+    final isHighContrast = theme.brightness == Brightness.light
+        ? theme.primaryColor == Colors.black
         : theme.primaryColor == Colors.yellow;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        
         GestureDetector(
           onTap: _showImageOverlay,
           child: Hero(
@@ -178,15 +194,21 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(20),
+                borderRadius: isHighContrast
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(20),
                 boxShadow: isHighContrast ? null : subtleShadows,
                 border: Border.all(
-                  color: isHighContrast ? theme.colorScheme.primary : theme.colorScheme.surface, 
+                  color: isHighContrast
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surface,
                   width: isHighContrast ? 2 : 4,
                 ),
               ),
               child: ClipRRect(
-                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(14),
+                borderRadius: isHighContrast
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(14),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -197,14 +219,18 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                             errorBuilder: (_, _, _) => Center(
                               child: Text(
                                 'Imagem indisponível',
-                                style: TextStyle(color: theme.colorScheme.onSurface),
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurface,
+                                ),
                               ),
                             ),
                           )
                         : Center(
                             child: Text(
                               'Imagem indisponível',
-                              style: TextStyle(color: theme.colorScheme.onSurface),
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
                           ),
                     Positioned(
@@ -232,7 +258,6 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
 
         const SizedBox(height: 24),
 
-        
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: 1),
           duration: const Duration(milliseconds: 800),
@@ -272,15 +297,16 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
 
         const SizedBox(height: 32),
 
-        
         Container(
           padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+            borderRadius: isHighContrast
+                ? BorderRadius.zero
+                : BorderRadius.circular(16),
             boxShadow: isHighContrast ? null : subtleShadows,
-            border: isHighContrast 
-                ? Border.all(color: theme.colorScheme.primary, width: 2) 
+            border: isHighContrast
+                ? Border.all(color: theme.colorScheme.primary, width: 2)
                 : null,
           ),
           child: Row(
@@ -311,7 +337,9 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
-                  color: isHighContrast ? Colors.transparent : theme.scaffoldBackgroundColor,
+                  color: isHighContrast
+                      ? Colors.transparent
+                      : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
@@ -326,7 +354,53 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
 
         const SizedBox(height: 16),
 
-        
+        Text(
+          'STATUS DA INSPEÇÃO',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildConformityButton(
+                context,
+                label: 'CONFORME',
+                icon: Icons.check_circle_outline,
+                status: ConformityStatus.ok,
+                selected: viewModel.conformityStatus == ConformityStatus.ok,
+                color: confirmGreen,
+                onPressed: () =>
+                    viewModel.updateConformityStatus(ConformityStatus.ok),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildConformityButton(
+                context,
+                label: 'NÃO CONFORME',
+                icon: Icons.error_outline,
+                status: ConformityStatus.nok,
+                selected: viewModel.conformityStatus == ConformityStatus.nok,
+                color: theme.colorScheme.error,
+                onPressed: () =>
+                    viewModel.updateConformityStatus(ConformityStatus.nok),
+              ),
+            ),
+          ],
+        ),
+
+        if (viewModel.conformityStatus == ConformityStatus.nok) ...[
+          const SizedBox(height: 16),
+          _buildNonConformityDetails(context, viewModel, theme, isHighContrast),
+        ],
+
+        const SizedBox(height: 24),
+
         if (draft.isValidMeasurement) ...[
           InfoCard(
             title: 'Largura',
@@ -357,7 +431,6 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
 
           const SizedBox(height: 24),
 
-          
           if (draft.segments.isNotEmpty) ...[
             Text(
               'SEGMENTOS DETALHADOS',
@@ -372,19 +445,23 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
             Container(
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+                borderRadius: isHighContrast
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(16),
                 boxShadow: isHighContrast ? null : subtleShadows,
-                border: isHighContrast 
-                    ? Border.all(color: theme.colorScheme.primary, width: 2) 
+                border: isHighContrast
+                    ? Border.all(color: theme.colorScheme.primary, width: 2)
                     : null,
               ),
               child: Column(
                 children: [
                   for (int i = 0; i < draft.segments.length; i++) ...[
-                    if (i > 0) 
+                    if (i > 0)
                       Divider(
-                        height: 1, 
-                        color: isHighContrast ? theme.colorScheme.primary : Colors.grey.shade200,
+                        height: 1,
+                        color: isHighContrast
+                            ? theme.colorScheme.primary
+                            : Colors.grey.shade200,
                       ),
                     ListTile(
                       contentPadding: const EdgeInsets.symmetric(
@@ -403,7 +480,9 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                         draft.segments[i].type.label.toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -422,16 +501,19 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
             ),
           ],
         ] else ...[
-          
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+              borderRadius: isHighContrast
+                  ? BorderRadius.zero
+                  : BorderRadius.circular(16),
               boxShadow: isHighContrast ? null : subtleShadows,
               border: Border.all(
-                color: isHighContrast ? theme.colorScheme.primary : paletteRed.withValues(alpha: 0.3),
+                color: isHighContrast
+                    ? theme.colorScheme.primary
+                    : paletteRed.withValues(alpha: 0.3),
                 width: isHighContrast ? 2 : 1,
               ),
             ),
@@ -439,7 +521,9 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
-                  color: isHighContrast ? theme.colorScheme.primary : paletteRed,
+                  color: isHighContrast
+                      ? theme.colorScheme.primary
+                      : paletteRed,
                   size: 32,
                 ),
                 const SizedBox(width: 16),
@@ -470,22 +554,26 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
     bool isLoading,
   ) {
     final theme = Theme.of(context);
-    final isHighContrast = theme.brightness == Brightness.light 
-        ? theme.primaryColor == Colors.black 
+    final isHighContrast = theme.brightness == Brightness.light
+        ? theme.primaryColor == Colors.black
         : theme.primaryColor == Colors.yellow;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16, 
-        12, 
-        16, 
-        MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom + 8 : 20
+        16,
+        12,
+        16,
+        MediaQuery.of(context).padding.bottom > 0
+            ? MediaQuery.of(context).padding.bottom + 8
+            : 20,
       ),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(
           top: BorderSide(
-            color: isHighContrast ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            color: isHighContrast
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withValues(alpha: 0.05),
             width: isHighContrast ? 2 : 1,
           ),
         ),
@@ -498,16 +586,22 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
               height: 60,
               child: OutlinedButton(
                 onPressed: isLoading ? null : _retake,
-                style: theme.outlinedButtonTheme.style ?? OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  side: BorderSide(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                    width: 2,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
+                style:
+                    theme.outlinedButtonTheme.style ??
+                    OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.6,
+                      ),
+                      side: BorderSide(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.1,
+                        ),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                 child: const Text(
                   'REFAZER',
                   style: TextStyle(
@@ -524,25 +618,33 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
             child: Container(
               height: 60,
               decoration: BoxDecoration(
-                borderRadius: isHighContrast ? BorderRadius.zero : BorderRadius.circular(16),
+                borderRadius: isHighContrast
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(16),
               ),
               child: ElevatedButton(
                 onPressed: (isLoading || !draft.isValidMeasurement)
                     ? null
                     : _save,
-                style: theme.elevatedButtonTheme.style?.copyWith(
-                  backgroundColor: WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.disabled)) return null;
-                    return isHighContrast ? theme.colorScheme.primary : confirmGreen;
-                  }),
-                ) ?? ElevatedButton.styleFrom(
-                  backgroundColor: confirmGreen,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
+                style:
+                    theme.elevatedButtonTheme.style?.copyWith(
+                      backgroundColor: WidgetStateProperty.resolveWith((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.disabled)) return null;
+                        return isHighContrast
+                            ? theme.colorScheme.primary
+                            : confirmGreen;
+                      }),
+                    ) ??
+                    ElevatedButton.styleFrom(
+                      backgroundColor: confirmGreen,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                 child: isLoading
                     ? SizedBox(
                         width: 24,
@@ -555,7 +657,11 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_outline, color: theme.colorScheme.onPrimary, size: 20),
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: theme.colorScheme.onPrimary,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'SALVAR',
@@ -573,6 +679,182 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildConformityButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required ConformityStatus status,
+    required bool selected,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    final theme = Theme.of(context);
+    final isHighContrast = theme.brightness == Brightness.light
+        ? theme.primaryColor == Colors.black
+        : theme.primaryColor == Colors.yellow;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 64,
+        decoration: BoxDecoration(
+          color: selected
+              ? (isHighContrast ? theme.colorScheme.primary : (theme.brightness == Brightness.dark ? theme.colorScheme.primary : color))
+              : theme.colorScheme.surface,
+          borderRadius: isHighContrast
+              ? BorderRadius.zero
+              : BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? (isHighContrast ? theme.colorScheme.primary : (theme.brightness == Brightness.dark ? theme.colorScheme.primary : color))
+                : (isHighContrast
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+            width: 2,
+          ),
+          boxShadow: selected && !isHighContrast
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: selected
+                  ? theme.colorScheme.onPrimary
+                  : (isHighContrast ? theme.colorScheme.primary : (theme.brightness == Brightness.dark ? theme.colorScheme.primary : color)),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? theme.colorScheme.onPrimary
+                    : (isHighContrast
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface),
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNonConformityDetails(
+    BuildContext context,
+    ValidationViewModel viewModel,
+    ThemeData theme,
+    bool isHighContrast,
+  ) {
+    final reasons = [
+      'Ângulo incorreto',
+      'Aresta fora de medida',
+      'Furo deslocado',
+      'Raio incorreto',
+      'Peça amassada/danificada',
+      'Rebarba',
+      'Outro',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'MOTIVO DA REPROVAÇÃO',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: reasons.map((reason) {
+            final isSelected = viewModel.nonConformityReason == reason;
+            return RawChip(
+              label: Text(reason),
+              selected: isSelected,
+              onSelected: (selected) {
+                viewModel.updateNonConformityReason(selected ? reason : null);
+              },
+              showCheckmark: false,
+              selectedColor: isHighContrast
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.secondaryContainer,
+              backgroundColor: theme.colorScheme.surface,
+              pressElevation: 0,
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? (isHighContrast
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSecondaryContainer)
+                    : theme.colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: isHighContrast
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(8),
+                side: BorderSide(
+                  color: isSelected
+                      ? (isHighContrast
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.error)
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: isHighContrast
+                ? BorderRadius.zero
+                : BorderRadius.circular(12),
+            border: Border.all(
+              color: isHighContrast
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.1),
+            ),
+          ),
+          child: TextField(
+            onChanged: viewModel.updateNonConformityObservation,
+            maxLines: 2,
+            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Observações adicionais (opcional)...',
+              hintStyle: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                fontSize: 14,
+              ),
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

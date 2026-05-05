@@ -10,6 +10,8 @@ import 'package:siderapredict/app/features/menu/view/menu_principal_page.dart';
 import 'package:siderapredict/app/features/reports/view/historico_page.dart';
 import 'package:siderapredict/app/features/splash/view/splash_page.dart';
 import 'package:siderapredict/app/features/settings/view/settings_page.dart';
+import 'package:siderapredict/app/features/auth/view/login_page.dart';
+import 'package:siderapredict/app/features/auth/view/signup_page.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/scanner_viewmodel.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/analysis_viewmodel.dart';
@@ -24,7 +26,8 @@ class CameraArgs {
 
 class ProcessingArgs {
   final String imagePath;
-  const ProcessingArgs({required this.imagePath});
+  final MeasurementSource source;
+  const ProcessingArgs({required this.imagePath, this.source = MeasurementSource.camera});
 }
 
 class ValidationArgs {
@@ -46,6 +49,18 @@ class AppPages {
       case AppRoutes.menuPrincipal:
         return MaterialPageRoute<void>(
           builder: (_) => const MenuPrincipalPage(),
+          settings: settings,
+        );
+
+      case AppRoutes.login:
+        return MaterialPageRoute<void>(
+          builder: (_) => const LoginPage(),
+          settings: settings,
+        );
+
+      case AppRoutes.signup:
+        return MaterialPageRoute<void>(
+          builder: (_) => const SignupPage(),
           settings: settings,
         );
 

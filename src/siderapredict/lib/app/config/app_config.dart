@@ -3,14 +3,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConfig {
   const AppConfig._();
 
-  static const String _firestoreProjectIdKey = 'FIRESTORE_PROJECT_ID';
-  static const String _firestoreApiKeyKey = 'FIRESTORE_API_KEY';
   static const String _firestoreCollectionKey = 'FIRESTORE_COLLECTION';
   static const String _ollamaBaseUrlKey = 'OLLAMA_BASE_URL';
   static const String _ollamaModelKey = 'OLLAMA_MODEL';
 
-  static String get firestoreProjectId => _read(_firestoreProjectIdKey);
-  static String get firestoreApiKey => _read(_firestoreApiKeyKey);
   static String get firestoreCollection => _read(_firestoreCollectionKey);
   static String get ollamaBaseUrl {
     final raw = _normalizeBaseUrl(_read(_ollamaBaseUrlKey));
@@ -19,10 +15,7 @@ class AppConfig {
 
   static String get ollamaModel => _read(_ollamaModelKey);
 
-  static bool get isFirestoreConfigured =>
-      firestoreProjectId.isNotEmpty &&
-      firestoreApiKey.isNotEmpty &&
-      firestoreCollection.isNotEmpty;
+  static bool get isFirestoreConfigured => firestoreCollection.isNotEmpty;
 
   static bool get isOllamaConfigured =>
       ollamaBaseUrl.isNotEmpty && ollamaModel.isNotEmpty;
@@ -32,7 +25,7 @@ class AppConfig {
 
     if (!isFirestoreConfigured) {
       messages.add(
-        'Preencha `FIRESTORE_PROJECT_ID`, `FIRESTORE_API_KEY` e `FIRESTORE_COLLECTION` no `.env`.',
+        'Preencha `FIRESTORE_COLLECTION` no `.env`.',
       );
     }
 

@@ -75,7 +75,9 @@ class _HistoricoPageState extends State<HistoricoPage> {
               Navigator.of(context).pop();
               OpenFilex.open(file.path);
             },
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
             child: const Text('Abrir'),
           ),
         ],
@@ -140,7 +142,9 @@ class _HistoricoPageState extends State<HistoricoPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
             child: const Text('Excluir'),
           ),
         ],
@@ -201,7 +205,8 @@ class _HistoricoPageState extends State<HistoricoPage> {
                         ? ListView(
                             children: [
                               SizedBox(
-                                height: MediaQuery.of(context).size.height * 0.6,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.6,
                                 child: Center(
                                   child: viewModel.isLoading
                                       ? CircularProgressIndicator(
@@ -210,9 +215,9 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                       : Text(
                                           'Nenhuma medição registrada.',
                                           style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                             fontSize: 16,
                                           ),
                                         ),
@@ -313,13 +318,11 @@ class _HistoricoPageState extends State<HistoricoPage> {
                       ),
                       const SizedBox(height: 16),
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Text(
                               record.pieceName,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
@@ -327,36 +330,50 @@ class _HistoricoPageState extends State<HistoricoPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Text(
-                              '${record.primaryValueMm.toStringAsFixed(3)} mm',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).primaryColor,
+                          const SizedBox(width: 16),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${record.primaryValueMm.toStringAsFixed(3)} mm',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).primaryColor,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 2),
+                              _ConformityBadge(
+                                status: record.conformityStatus,
+                                compact: true,
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            onPressed: () => _exportSingleRecordPdf(record),
-                            icon: Icon(
-                              Icons.picture_as_pdf_outlined,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () => _exportSingleRecordExcel(record),
-                            icon: Icon(
-                              Icons.table_chart_outlined,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
+                          const SizedBox(width: 16),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () => _exportSingleRecordPdf(record),
+                                icon: Icon(
+                                  Icons.picture_as_pdf_outlined,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              const SizedBox(width: 12),
+                              IconButton(
+                                onPressed: () => _exportSingleRecordExcel(record),
+                                icon: Icon(
+                                  Icons.table_chart_outlined,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -369,18 +386,81 @@ class _HistoricoPageState extends State<HistoricoPage> {
                           Text(
                             _formatter.format(record.createdAt.toLocal()),
                             style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface),
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           if (pieceOfDayLabel != null)
                             Text(
                               pieceOfDayLabel,
                               style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface),
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                             ),
                           _AiStatusBadge(status: record.aiReportStatus),
+                          _ConformityBadge(status: record.conformityStatus),
                         ],
                       ),
+                      if (record.conformityStatus == ConformityStatus.nok) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: paletteRed.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: paletteRed.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: paletteRed,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'MOTIVO DA REPROVAÇÃO',
+                                    style: TextStyle(
+                                      color: paletteRed,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 10,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                record.nonConformityReason ??
+                                    'Motivo não especificado',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (record.nonConformityObservation?.isNotEmpty ??
+                                  false) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  record.nonConformityObservation!,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                       const Divider(height: 20),
                       Expanded(
                         child: SingleChildScrollView(
@@ -398,12 +478,16 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                 'Resumo',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   shadows: textShadows,
                                 ),
                               ),
                               const SizedBox(height: 6),
+                              Text(
+                                'Responsável: ${record.responsavel ?? 'n/a'}',
+                              ),
                               Text(
                                 'Data: ${_formatter.format(record.createdAt.toLocal())}',
                               ),
@@ -422,16 +506,14 @@ class _HistoricoPageState extends State<HistoricoPage> {
                               Text(
                                 'Área: ${record.draft.areaMm2.toStringAsFixed(3)} mm²',
                               ),
-                              Text(
-                                'Escala: ${record.draft.scaleMicronsPerPx?.toStringAsFixed(3) ?? '-'} µm/px',
-                              ),
                               const SizedBox(height: 16),
                               Text(
                                 'Segmentos medidos',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   shadows: textShadows,
                                 ),
                               ),
@@ -454,8 +536,9 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                 'Relatório IA',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                   shadows: textShadows,
                                 ),
                               ),
@@ -474,32 +557,33 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                       ? 'Relatório indisponível no momento.'
                                       : record.aiReport,
                                   selectable: true,
-                                  styleSheet: MarkdownStyleSheet.fromTheme(
-                                    Theme.of(context),
-                                  ).copyWith(
-                                    p: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(height: 1.45),
-                                    h1: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                    h2: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                    h3: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
+                                  styleSheet:
+                                      MarkdownStyleSheet.fromTheme(
+                                        Theme.of(context),
+                                      ).copyWith(
+                                        p: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(height: 1.45),
+                                        h1: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                        h2: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                        h3: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
                                 ),
                             ],
                           ),
@@ -516,8 +600,6 @@ class _HistoricoPageState extends State<HistoricoPage> {
     );
   }
 }
-
-
 
 class _HistoryCard extends StatelessWidget {
   const _HistoryCard({
@@ -548,12 +630,14 @@ class _HistoryCard extends StatelessWidget {
           boxShadow: subtleShadows,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _HistoryRecordImage(record: record, width: 52, height: 52),
-            const SizedBox(width: 12),
+            _HistoryRecordImage(record: record, width: 48, height: 48),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     record.pieceName,
@@ -561,18 +645,18 @@ class _HistoryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                      fontSize: 15,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
-                    dateLabel,
+                    '$dateLabel • ${record.responsavel ?? 'n/a'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF617886),
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                   if (pieceOfDayLabel != null)
@@ -582,12 +666,12 @@ class _HistoryCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF617886),
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   if (record.isAiReportStreaming) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     _AiStatusBadge(status: record.aiReportStatus),
                   ],
                 ],
@@ -600,20 +684,25 @@ class _HistoryCard extends StatelessWidget {
               children: [
                 Text(
                   '${record.primaryValueMm.toStringAsFixed(3)} mm',
-                  textAlign: TextAlign.right,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
+                    fontSize: 14,
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
+                _ConformityBadge(
+                  status: record.conformityStatus,
+                  compact: true,
+                ),
+                const SizedBox(height: 6),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: Icon(
                         Icons.picture_as_pdf_outlined,
-                        size: 20,
+                        size: 18,
                         color: Theme.of(context).primaryColor,
                       ),
                       onPressed: onDownloadPdf,
@@ -621,11 +710,11 @@ class _HistoryCard extends StatelessWidget {
                       constraints: const BoxConstraints(),
                       tooltip: 'PDF',
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: Icon(
                         Icons.table_chart_outlined,
-                        size: 20,
+                        size: 18,
                         color: Theme.of(context).primaryColor,
                       ),
                       onPressed: onDownloadExcel,
@@ -643,8 +732,6 @@ class _HistoryCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class _HistoryRecordImage extends StatefulWidget {
   const _HistoryRecordImage({
@@ -709,8 +796,10 @@ class _HistoryRecordImageState extends State<_HistoryRecordImage> {
               image: _imageProvider!,
               fit: BoxFit.cover,
               gaplessPlayback: true,
-              errorBuilder: (_, _, _) =>
-                  Icon(Icons.broken_image_outlined, color: Theme.of(context).primaryColor),
+              errorBuilder: (_, _, _) => Icon(
+                Icons.broken_image_outlined,
+                color: Theme.of(context).primaryColor,
+              ),
             ),
     );
 
@@ -748,8 +837,6 @@ class _HistoryRecordImageState extends State<_HistoryRecordImage> {
   }
 }
 
-
-
 class _AiStatusBadge extends StatelessWidget {
   const _AiStatusBadge({required this.status});
 
@@ -757,11 +844,12 @@ class _AiStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final (label, color) = switch (status) {
       AiReportStatus.pending => ('IA na fila', const Color(0xFF7F8C8D)),
-      AiReportStatus.generating => ('IA gerando', paletteRed),
+      AiReportStatus.generating => ('IA gerando', theme.colorScheme.error),
       AiReportStatus.completed => ('IA concluída', confirmGreen),
-      AiReportStatus.failed => ('IA com fallback', Theme.of(context).primaryColor),
+      AiReportStatus.failed => ('IA com fallback', theme.primaryColor),
     };
 
     return Container(
@@ -777,6 +865,69 @@ class _AiStatusBadge extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
+      ),
+    );
+  }
+}
+
+class _ConformityBadge extends StatelessWidget {
+  const _ConformityBadge({required this.status, this.compact = false});
+
+  final ConformityStatus status;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isOk = status == ConformityStatus.ok;
+    final color = isOk
+        ? confirmGreen
+        : (isDark ? theme.colorScheme.primary : theme.colorScheme.error);
+    final label = isOk ? 'CONFORME' : 'NÃO CONFORME';
+    final icon = isOk ? Icons.check_circle : Icons.cancel;
+
+    if (compact) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,12 +1,10 @@
 import 'package:camera/camera.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:siderapredict/app/app_widget.dart';
 import 'package:siderapredict/firebase_options.dart';
 
@@ -30,12 +28,7 @@ Future<void> main() async {
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
 
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
-      debugPrint(
-        'Autenticado anonimamente: ${FirebaseAuth.instance.currentUser?.uid}',
-      );
-    }
+    // Autenticação tratada na camada de rotas (Splash / Login / Menu)
   } catch (e) {
     debugPrint('Erro ao inicializar Firebase ou Autenticar: $e');
   }

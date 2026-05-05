@@ -7,9 +7,19 @@ import 'package:siderapredict/app/routes/app_routes.dart';
 import 'package:siderapredict/app/core/theme/theme.dart';
 import 'package:siderapredict/app/features/inspection/view/camera_overlay.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/scanner_viewmodel.dart';
+import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 
-class ScannerPage extends StatelessWidget {
+class ScannerPage extends StatefulWidget {
   const ScannerPage({super.key});
+
+  @override
+  State<ScannerPage> createState() => _ScannerPageState();
+}
+
+class _ScannerPageState extends State<ScannerPage> {
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -34,38 +44,17 @@ class ScannerPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: ClipRRect(
-          child: AppBar(
-            backgroundColor: isHighContrast ? Colors.black : primaryColor,
-            elevation: 0,
-            centerTitle: true,
-            shape: isHighContrast 
-                ? const Border(bottom: BorderSide(color: Colors.white, width: 2))
-                : null,
-            title: Text(
-              'INSPEÇÃO DIGITAL',
-              style: TextStyle(
-                color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                letterSpacing: 2,
-              ),
-            ),
-            leading: IconButton(
-              icon: Icon(
-                Icons.close, 
-                color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white, 
-                size: 28,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            actions: const [
-              SizedBox(width: 48),
-            ],
+      appBar: buildAppBar(
+        context: context,
+        title: 'Inspeção Digital',
+        showBack: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white, size: 28),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-        ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: [
@@ -205,30 +194,7 @@ class ScannerPage extends StatelessWidget {
                     ),
                   ),
 
-                  Positioned(
-                    right: 48,
-                    child: Column(
-                      children: [
-                        IconButton(
-                          onPressed: () => _onPickFromGallery(context, viewModel),
-                          icon: Icon(
-                            Icons.photo_library_outlined,
-                            color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                        Text(
-                          'GALERIA',
-                          style: TextStyle(
-                            color: isHighContrast ? (theme.brightness == Brightness.dark ? Colors.yellow : Colors.white) : Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+
                 ],
               ),
             ),
@@ -255,9 +221,16 @@ class ScannerPage extends StatelessWidget {
     try {
       final picture = await viewModel.capture();
       if (picture != null && context.mounted) {
+        // Desligar lanterna/flash ao ir para a tela de carregamento/processamento
+        await viewModel.disableFlash();
+        if (!context.mounted) return;
+
         Navigator.of(context).pushNamed(
           AppRoutes.processing,
-          arguments: ProcessingArgs(imagePath: picture.path),
+          arguments: ProcessingArgs(
+            imagePath: picture.path,
+            source: MeasurementSource.camera,
+          ),
         );
       }
     } catch (e) {
@@ -269,13 +242,5 @@ class ScannerPage extends StatelessWidget {
     }
   }
 
-  Future<void> _onPickFromGallery(BuildContext context, ScannerViewModel viewModel) async {
-    final picked = await viewModel.pickFromGallery();
-    if (picked != null && context.mounted) {
-      Navigator.of(context).pushNamed(
-        AppRoutes.processing,
-        arguments: ProcessingArgs(imagePath: picked.path),
-      );
-    }
-  }
+
 }

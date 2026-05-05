@@ -33,18 +33,20 @@ class CvBridge {
   Future<Map<String, dynamic>> analyze(String inputPath) async {
     final directory = await getTemporaryDirectory();
     final now = DateTime.now().microsecondsSinceEpoch;
-    final outputPath = '${directory.path}/processed_output_$now.jpg';
+    final outputPath = '${directory.path}/processed_output_$now.png';
     final preparedInput = await _prepareInputImage(
       inputPath: inputPath,
       directory: directory,
       timestamp: now,
     );
 
+    final pathToSend = preparedInput.path;
+
     try {
       return await Isolate.run<Map<String, dynamic>>(
         () => _analyzeImageInBackground(
           libraryName: _libraryNameForPlatform(),
-          inputPath: preparedInput.path,
+          inputPath: pathToSend,
           outputPath: outputPath,
         ),
       );
@@ -72,7 +74,6 @@ Future<_PreparedInputImage> _prepareInputImage({
   }
 
   try {
-    final inputExtension = sourceFile.path.toLowerCase();
     final bytes = await sourceFile.readAsBytes();
     final decoded = img.decodeImage(bytes);
     if (decoded == null) {
@@ -80,19 +81,14 @@ Future<_PreparedInputImage> _prepareInputImage({
     }
 
     var normalized = img.bakeOrientation(decoded);
-    const maxDimensionPx = 4096;
+    const maxDimensionPx =
+        -1; // <= 0 desativa resize para manter resolucao original.
     final needsResize =
-        normalized.width > maxDimensionPx || normalized.height > maxDimensionPx;
+        maxDimensionPx > 0 &&
+        (normalized.width > maxDimensionPx ||
+            normalized.height > maxDimensionPx);
 
-    if (!needsResize &&
-        (inputExtension.endsWith('.jpg') ||
-            inputExtension.endsWith('.jpeg') ||
-            inputExtension.endsWith('.png'))) {
-      return _PreparedInputImage(path: inputPath);
-    }
-
-    if (normalized.width > maxDimensionPx ||
-        normalized.height > maxDimensionPx) {
+    if (needsResize) {
       normalized = normalized.width >= normalized.height
           ? img.copyResize(normalized, width: maxDimensionPx)
           : img.copyResize(normalized, height: maxDimensionPx);
@@ -138,6 +134,10 @@ Map<String, dynamic> _analyzeImageInBackground({
     int? charucoCornerCount;
     String? errorMessage;
     double markerSizeMm = 10.0;
+    List<double> holeDiametersMm = const [];
+    List<double> holeSpacingMm = const [];
+    List<double> slotWidthsMm = const [];
+    List<double> slotLengthsMm = const [];
 
     final geometryFile = File(geometryPath);
     if (geometryFile.existsSync()) {
@@ -196,9 +196,37 @@ Map<String, dynamic> _analyzeImageInBackground({
           if (markerSizeMmRaw is num) {
             markerSizeMm = markerSizeMmRaw.toDouble();
           }
+          // New expanded fields
+          final dynamic holeDiametersRaw = decoded['holeDiametersMm'];
+          final dynamic holeSpacingRaw = decoded['holeSpacingMm'];
+          final dynamic slotWidthsRaw = decoded['slotWidthsMm'];
+          final dynamic slotLengthsRaw = decoded['slotLengthsMm'];
+          if (holeDiametersRaw is List) {
+            holeDiametersMm = holeDiametersRaw
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList(growable: false);
+          }
+          if (holeSpacingRaw is List) {
+            holeSpacingMm = holeSpacingRaw
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList(growable: false);
+          }
+          if (slotWidthsRaw is List) {
+            slotWidthsMm = slotWidthsRaw
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList(growable: false);
+          }
+          if (slotLengthsRaw is List) {
+            slotLengthsMm = slotLengthsRaw
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList(growable: false);
+          }
         }
-      } catch (_) {
-      }
+      } catch (_) {}
     }
 
     final resolvedOutputPath = File(outputPath).existsSync()
@@ -215,6 +243,10 @@ Map<String, dynamic> _analyzeImageInBackground({
       'anglesDeg': anglesDeg,
       'holeRadiiMm': holeRadiiMm,
       'semiCircleRadiiMm': semiCircleRadiiMm,
+      'holeDiametersMm': holeDiametersMm,
+      'holeSpacingMm': holeSpacingMm,
+      'slotWidthsMm': slotWidthsMm,
+      'slotLengthsMm': slotLengthsMm,
       'perimeterMm': perimeterMm,
       'areaMm2': areaMm2,
       'scaleMicronsPerPx': scaleMicronsPerPx,

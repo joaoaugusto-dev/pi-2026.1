@@ -146,9 +146,7 @@ AppBar buildAppBar({
     toolbarHeight: toolbarHeight,
     shape: isHighContrast 
       ? Border(bottom: BorderSide(color: theme.appBarTheme.foregroundColor!, width: 2))
-      : const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-        ),
+      : null,
     actions: actions,
   );
 }
@@ -162,9 +160,14 @@ ThemeData buildLightTheme() {
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       onPrimary: whiteColor,
+      secondary: primaryColor,
+      onSecondary: whiteColor,
+      secondaryContainer: Color(0xFFFFEBEE), // Light red/pink
+      onSecondaryContainer: paletteRed,
       surface: whiteColor,
       onSurface: darkTextColor,
       surfaceContainerHighest: whiteColor,
+      error: paletteRed,
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: primaryColor,
@@ -189,9 +192,14 @@ ThemeData buildDarkTheme() {
     colorScheme: const ColorScheme.dark(
       primary: primaryColorDark,
       onPrimary: whiteColor,
+      secondary: primaryColorDark,
+      onSecondary: whiteColor,
+      secondaryContainer: Color(0xFF442B2B), // Slightly lighter/more visible dark red
+      onSecondaryContainer: Color(0xFFFF8A80), // Vibrant light red for text on container
       surface: Color(0xFF1E1E1E),
       onSurface: whiteColor,
       surfaceContainerHighest: Color(0xFF2C2C2C),
+      error: primaryColorDark,
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1E1E1E),

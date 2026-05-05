@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 class ScannerViewModel extends ChangeNotifier {
@@ -19,7 +18,6 @@ class ScannerViewModel extends ChangeNotifier {
   bool _isCapturing = false;
   double _rollDegrees = 0;
   double _pitchDegrees = 0;
-  final ImagePicker _picker = ImagePicker();
 
   CameraController? get controller => _controller;
   Future<void>? get initializeControllerFuture => _initializeControllerFuture;
@@ -44,11 +42,15 @@ class ScannerViewModel extends ChangeNotifier {
     _controller?.dispose();
     _controller = CameraController(
       cameras[backIdx],
-      ResolutionPreset.high,
+      ResolutionPreset.max,
       enableAudio: false,
     );
     _initializeControllerFuture = _controller!.initialize().then((_) async {
       await _controller!.setFlashMode(_flashMode);
+      try {
+        await _controller!.setFocusMode(FocusMode.auto);
+        await _controller!.setExposureMode(ExposureMode.auto);
+      } catch (_) {}
       notifyListeners();
     });
     notifyListeners();
@@ -56,15 +58,13 @@ class ScannerViewModel extends ChangeNotifier {
 
   void _listenForLevel() {
     _accelerometerSub = accelerometerEventStream().listen((event) {
-      
       final roll = math.atan2(event.x, event.z) * 180 / math.pi;
       final pitch = math.atan2(event.y, event.z) * 180 / math.pi;
 
-      
-      const double alpha = 0.15; 
+      const double alpha = 0.15;
       _rollDegrees = (alpha * roll) + ((1 - alpha) * _rollDegrees);
       _pitchDegrees = (alpha * pitch) + ((1 - alpha) * _pitchDegrees);
-      
+
       notifyListeners();
     });
   }
@@ -93,8 +93,20 @@ class ScannerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> disableFlash() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    try {
+      await _controller!.setFlashMode(FlashMode.off);
+      _flashMode = FlashMode.off;
+      _flashStep = 2; // Index for FlashMode.off in toggleFlash logic
+      notifyListeners();
+    } catch (_) {}
+  }
+
   Future<XFile?> capture() async {
-    if (_controller == null || !_controller!.value.isInitialized || _isCapturing) {
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _isCapturing) {
       return null;
     }
     _isCapturing = true;
@@ -104,7 +116,19 @@ class ScannerViewModel extends ChangeNotifier {
       if (_initializeControllerFuture != null) {
         await _initializeControllerFuture;
       }
+
+      try {
+        await _controller!.setFocusMode(FocusMode.locked);
+      } catch (_) {}
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
       final picture = await _controller!.takePicture();
+
+      try {
+        await _controller!.setFocusMode(FocusMode.auto);
+      } catch (_) {}
+
       _isCapturing = false;
       notifyListeners();
       return picture;
@@ -115,9 +139,7 @@ class ScannerViewModel extends ChangeNotifier {
     }
   }
 
-  Future<XFile?> pickFromGallery() async {
-    return await _picker.pickImage(source: ImageSource.gallery);
-  }
+
 
   @override
   void dispose() {
