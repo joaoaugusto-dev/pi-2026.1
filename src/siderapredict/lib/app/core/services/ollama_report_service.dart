@@ -29,9 +29,10 @@ class OllamaReportService {
     required String pieceName,
     required MeasurementDraft draft,
     required DateTime createdAt,
-    ConformityStatus conformityStatus = ConformityStatus.ok,
+    required ConformityStatus conformityStatus,
     String? nonConformityReason,
     String? nonConformityObservation,
+    String? responsavel,
   }) async* {
     if (!isConfigured) {
       throw StateError(
@@ -46,6 +47,7 @@ class OllamaReportService {
       conformityStatus: conformityStatus,
       nonConformityReason: nonConformityReason,
       nonConformityObservation: nonConformityObservation,
+      responsavel: responsavel,
     );
     final request = http.Request('POST', Uri.parse('$baseUrl/api/generate'))
       ..headers['Content-Type'] = 'application/json'
@@ -112,13 +114,14 @@ class OllamaReportService {
     yield AiReportChunk(fullText: text, isDone: true);
   }
 
-  Future<String> buildReport({
+  Future<String> generateReport({
     required String pieceName,
     required MeasurementDraft draft,
     required DateTime createdAt,
-    ConformityStatus conformityStatus = ConformityStatus.ok,
+    required ConformityStatus conformityStatus,
     String? nonConformityReason,
     String? nonConformityObservation,
+    String? responsavel,
   }) async {
     if (!isConfigured) {
       return _fallbackReport(
@@ -136,6 +139,7 @@ class OllamaReportService {
       conformityStatus: conformityStatus,
       nonConformityReason: nonConformityReason,
       nonConformityObservation: nonConformityObservation,
+      responsavel: responsavel,
     );
 
     try {
@@ -179,6 +183,7 @@ class OllamaReportService {
     required ConformityStatus conformityStatus,
     String? nonConformityReason,
     String? nonConformityObservation,
+    String? responsavel,
   }) {
     final segments = draft.segments
         .map((s) => '- **${s.label}**: **${s.displayValue}**')
@@ -194,6 +199,7 @@ Sua tarefa é sintetizar os dados da peça "$pieceName" em um resumo claro e obj
 Contexto:
 - Peça: $pieceName (Nº $pieceNumber do dia)
 - Data/Hora: $measurementDate às $measurementTime
+- Responsável: ${responsavel ?? 'Não informado'}
 - Status Registrado pelo Operador: **${conformityStatus == ConformityStatus.ok ? 'CONFORME' : 'NÃO CONFORME'}**
 ${conformityStatus == ConformityStatus.nok ? '- Motivo da Reprovação (Informado): **$nonConformityReason**' : ''}
 ${conformityStatus == ConformityStatus.nok && nonConformityObservation != null ? '- Observação do Operador: $nonConformityObservation' : ''}

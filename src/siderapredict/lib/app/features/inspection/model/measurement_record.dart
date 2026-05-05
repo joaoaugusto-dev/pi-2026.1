@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-enum PieceSegmentType { edge, semicircle, hole, overallWidth, overallHeight, angle }
-
+enum PieceSegmentType { edge, semicircle, hole, overallWidth, overallHeight, angle, slot, chamfer, diameter, spacing }
+enum MeasurementSource { camera }
 enum AiReportStatus { pending, generating, completed, failed }
 
 extension AiReportStatusStorage on AiReportStatus {
@@ -42,7 +42,7 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
       case PieceSegmentType.edge:
         return 'Aresta';
       case PieceSegmentType.semicircle:
-        return 'Semicirculo';
+        return 'Semicírculo';
       case PieceSegmentType.hole:
         return 'Furo';
       case PieceSegmentType.overallWidth:
@@ -51,6 +51,14 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
         return 'Altura geral';
       case PieceSegmentType.angle:
         return 'Ângulo';
+      case PieceSegmentType.slot:
+        return 'Slot';
+      case PieceSegmentType.chamfer:
+        return 'Chanfro';
+      case PieceSegmentType.diameter:
+        return 'Diâmetro';
+      case PieceSegmentType.spacing:
+        return 'Espaçamento';
     }
   }
 
@@ -68,6 +76,14 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
         return 'overall_height';
       case PieceSegmentType.angle:
         return 'angle';
+      case PieceSegmentType.slot:
+        return 'slot';
+      case PieceSegmentType.chamfer:
+        return 'chamfer';
+      case PieceSegmentType.diameter:
+        return 'diameter';
+      case PieceSegmentType.spacing:
+        return 'spacing';
     }
   }
 
@@ -83,6 +99,14 @@ extension PieceSegmentTypeLabel on PieceSegmentType {
         return PieceSegmentType.overallHeight;
       case 'angle':
         return PieceSegmentType.angle;
+      case 'slot':
+        return PieceSegmentType.slot;
+      case 'chamfer':
+        return PieceSegmentType.chamfer;
+      case 'diameter':
+        return PieceSegmentType.diameter;
+      case 'spacing':
+        return PieceSegmentType.spacing;
       case 'hole':
       default:
         return PieceSegmentType.hole;
@@ -97,6 +121,7 @@ class PieceSegmentMeasurement {
     required this.valueMm,
     this.isRadius = false,
     this.isAngle = false,
+    this.isDiameter = false,
   });
 
   final PieceSegmentType type;
@@ -104,10 +129,12 @@ class PieceSegmentMeasurement {
   final double valueMm;
   final bool isRadius;
   final bool isAngle;
+  final bool isDiameter;
 
   String get displayValue {
-    if (isAngle) return '${valueMm.toStringAsFixed(1)}°';
+    if (isAngle) return '${valueMm.toStringAsFixed(1)}º';
     final formatted = valueMm.toStringAsFixed(3);
+    if (isDiameter) return 'D$formatted mm';
     return isRadius ? 'R$formatted mm' : '$formatted mm';
   }
 
@@ -118,6 +145,7 @@ class PieceSegmentMeasurement {
       'valueMm': valueMm,
       'isRadius': isRadius,
       'isAngle': isAngle,
+      'isDiameter': isDiameter,
     };
   }
 
@@ -130,6 +158,7 @@ class PieceSegmentMeasurement {
       valueMm: (json['valueMm'] as num? ?? 0).toDouble(),
       isRadius: json['isRadius'] as bool? ?? false,
       isAngle: json['isAngle'] as bool? ?? false,
+      isDiameter: json['isDiameter'] as bool? ?? false,
     );
   }
 }
@@ -147,6 +176,7 @@ class MeasurementDraft {
     required this.scaleMicronsPerPx,
     required this.markerSizeMm,
     required this.segments,
+    this.source = MeasurementSource.camera,
     this.pieceNumberOfDay,
     this.extraInfo,
     this.quickStatus,
@@ -163,6 +193,7 @@ class MeasurementDraft {
   final double? scaleMicronsPerPx;
   final double markerSizeMm;
   final List<PieceSegmentMeasurement> segments;
+  final MeasurementSource source;
   final int? pieceNumberOfDay;
   final String? extraInfo;
   final String? quickStatus;
@@ -199,6 +230,7 @@ class MeasurementDraft {
     double? scaleMicronsPerPx,
     double? markerSizeMm,
     List<PieceSegmentMeasurement>? segments,
+    MeasurementSource? source,
     int? pieceNumberOfDay,
     String? extraInfo,
     String? quickStatus,
@@ -215,6 +247,7 @@ class MeasurementDraft {
       scaleMicronsPerPx: scaleMicronsPerPx ?? this.scaleMicronsPerPx,
       markerSizeMm: markerSizeMm ?? this.markerSizeMm,
       segments: segments ?? this.segments,
+      source: source ?? this.source,
       pieceNumberOfDay: pieceNumberOfDay ?? this.pieceNumberOfDay,
       extraInfo: extraInfo ?? this.extraInfo,
       quickStatus: quickStatus ?? this.quickStatus,
@@ -234,6 +267,7 @@ class MeasurementDraft {
       'scaleMicronsPerPx': scaleMicronsPerPx,
       'markerSizeMm': markerSizeMm,
       'segments': segments.map((m) => m.toJson()).toList(growable: false),
+      'source': source.name,
       'pieceNumberOfDay': pieceNumberOfDay,
       'extraInfo': extraInfo,
       'quickStatus': quickStatus,
@@ -260,6 +294,10 @@ class MeasurementDraft {
       segments: rawSegments
           .map(PieceSegmentMeasurement.fromJson)
           .toList(growable: false),
+      source: MeasurementSource.values.firstWhere(
+        (e) => e.name == json['source'],
+        orElse: () => MeasurementSource.camera,
+      ),
       pieceNumberOfDay: json['pieceNumberOfDay'] as int?,
       extraInfo: json['extraInfo'] as String?,
       quickStatus: json['quickStatus'] as String?,
@@ -292,6 +330,7 @@ class MeasurementRecord {
     this.conformityStatus = ConformityStatus.ok,
     this.nonConformityReason,
     this.nonConformityObservation,
+    this.responsavel,
   });
 
   final String id;
@@ -306,6 +345,7 @@ class MeasurementRecord {
   final ConformityStatus conformityStatus;
   final String? nonConformityReason;
   final String? nonConformityObservation;
+  final String? responsavel;
 
   bool get isAiReportStreaming =>
       aiReportStatus == AiReportStatus.pending ||
@@ -325,6 +365,7 @@ class MeasurementRecord {
     ConformityStatus? conformityStatus,
     String? nonConformityReason,
     String? nonConformityObservation,
+    String? responsavel,
   }) {
     return MeasurementRecord(
       id: id ?? this.id,
@@ -342,6 +383,7 @@ class MeasurementRecord {
       nonConformityReason: nonConformityReason ?? this.nonConformityReason,
       nonConformityObservation:
           nonConformityObservation ?? this.nonConformityObservation,
+      responsavel: responsavel ?? this.responsavel,
     );
   }
 
@@ -359,6 +401,7 @@ class MeasurementRecord {
       'conformityStatus': conformityStatus.storageValue,
       'nonConformityReason': nonConformityReason,
       'nonConformityObservation': nonConformityObservation,
+      'responsavel': responsavel,
     };
   }
 
@@ -387,6 +430,7 @@ class MeasurementRecord {
       ),
       nonConformityReason: json['nonConformityReason'] as String?,
       nonConformityObservation: json['nonConformityObservation'] as String?,
+      responsavel: json['responsavel'] as String?,
     );
   }
 

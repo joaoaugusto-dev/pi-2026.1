@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:siderapredict/app/core/theme/theme.dart';
 import 'package:siderapredict/app/features/settings/viewmodel/settings_viewmodel.dart';
+import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
+import 'package:siderapredict/app/routes/app_routes.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -89,6 +91,26 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
               );
+            },
+          ),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Conta'),
+          ListTile(
+            leading: const Icon(Icons.logout, color: paletteRed),
+            title: const Text(
+              'Sair da Conta',
+              style: TextStyle(color: paletteRed, fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text('Encerrar sua sessão atual'),
+            onTap: () async {
+              final authViewModel = context.read<AuthViewModel>();
+              await authViewModel.logout();
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  AppRoutes.login,
+                  (route) => false,
+                );
+              }
             },
           ),
         ],

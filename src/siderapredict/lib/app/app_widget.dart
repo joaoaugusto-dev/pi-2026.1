@@ -16,6 +16,8 @@ import 'package:siderapredict/app/features/inspection/data/measurement_repositor
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
 import 'package:siderapredict/app/core/services/settings_service.dart';
 import 'package:siderapredict/app/features/settings/viewmodel/settings_viewmodel.dart';
+import 'package:siderapredict/app/core/services/auth_service.dart';
+import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final statusBarStyle = SystemUiOverlayStyle(
@@ -32,10 +34,12 @@ class AppWidget extends StatelessWidget {
   }) : _viewModel = _buildViewModel(cameras),
        _settingsViewModel = SettingsViewModel(
          settingsService: SettingsService(sharedPreferences),
-       );
+       ),
+       _authViewModel = AuthViewModel(authService: AuthService());
 
   final InspectionViewModel _viewModel;
   final SettingsViewModel _settingsViewModel;
+  final AuthViewModel _authViewModel;
 
   static InspectionViewModel _buildViewModel(List<CameraDescription> cameras) {
     final firestore = FirestoreService(
@@ -65,6 +69,7 @@ class AppWidget extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<InspectionViewModel>.value(value: _viewModel),
         ChangeNotifierProvider<SettingsViewModel>.value(value: _settingsViewModel),
+        ChangeNotifierProvider<AuthViewModel>.value(value: _authViewModel),
       ],
       child: Consumer<SettingsViewModel>(
         builder: (context, settings, _) {

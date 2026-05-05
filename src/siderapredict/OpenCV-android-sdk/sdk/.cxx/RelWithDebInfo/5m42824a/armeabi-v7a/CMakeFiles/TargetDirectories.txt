@@ -1,0 +1,3 @@
+/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/RelWithDebInfo/5m42824a/armeabi-v7a/CMakeFiles/opencv_jni_shared.dir
+/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/RelWithDebInfo/5m42824a/armeabi-v7a/CMakeFiles/edit_cache.dir
+/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/RelWithDebInfo/5m42824a/armeabi-v7a/CMakeFiles/rebuild_cache.dir

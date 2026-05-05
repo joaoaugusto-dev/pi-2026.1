@@ -46,6 +46,9 @@ class InspectionViewModel extends ChangeNotifier {
 
     try {
       currentDraft = await _measurementService.processImage(path);
+      if (currentDraft != null) {
+        currentDraft = currentDraft!.copyWith(source: MeasurementSource.camera);
+      }
     } catch (error) {
       lastError = error.toString();
       currentDraft = null;
@@ -60,6 +63,7 @@ class InspectionViewModel extends ChangeNotifier {
     ConformityStatus conformityStatus = ConformityStatus.ok,
     String? nonConformityReason,
     String? nonConformityObservation,
+    String? responsavel,
   }) async {
     final draft = currentDraft;
     if (draft == null || !draft.isValidMeasurement) {
@@ -81,6 +85,7 @@ class InspectionViewModel extends ChangeNotifier {
         conformityStatus: conformityStatus,
         nonConformityReason: nonConformityReason,
         nonConformityObservation: nonConformityObservation,
+        responsavel: responsavel,
       );
 
       history = _upsertHistory(history, saved);

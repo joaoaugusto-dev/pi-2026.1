@@ -318,13 +318,11 @@ class _HistoricoPageState extends State<HistoricoPage> {
                       ),
                       const SizedBox(height: 16),
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Text(
                               record.pieceName,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
@@ -332,45 +330,50 @@ class _HistoricoPageState extends State<HistoricoPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '${record.primaryValueMm.toStringAsFixed(3)} mm',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
+                          const SizedBox(width: 16),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${record.primaryValueMm.toStringAsFixed(3)} mm',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(context).primaryColor,
                                 ),
-                                _ConformityBadge(
-                                  status: record.conformityStatus,
-                                  compact: true,
+                              ),
+                              const SizedBox(height: 2),
+                              _ConformityBadge(
+                                status: record.conformityStatus,
+                                compact: true,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 16),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () => _exportSingleRecordPdf(record),
+                                icon: Icon(
+                                  Icons.picture_as_pdf_outlined,
+                                  color: Theme.of(context).primaryColor,
                                 ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => _exportSingleRecordPdf(record),
-                            icon: Icon(
-                              Icons.picture_as_pdf_outlined,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () => _exportSingleRecordExcel(record),
-                            icon: Icon(
-                              Icons.table_chart_outlined,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              const SizedBox(width: 12),
+                              IconButton(
+                                onPressed: () => _exportSingleRecordExcel(record),
+                                icon: Icon(
+                                  Icons.table_chart_outlined,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -482,6 +485,9 @@ class _HistoricoPageState extends State<HistoricoPage> {
                                 ),
                               ),
                               const SizedBox(height: 6),
+                              Text(
+                                'Responsável: ${record.responsavel ?? 'n/a'}',
+                              ),
                               Text(
                                 'Data: ${_formatter.format(record.createdAt.toLocal())}',
                               ),
@@ -624,12 +630,14 @@ class _HistoryCard extends StatelessWidget {
           boxShadow: subtleShadows,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _HistoryRecordImage(record: record, width: 52, height: 52),
-            const SizedBox(width: 12),
+            _HistoryRecordImage(record: record, width: 48, height: 48),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     record.pieceName,
@@ -637,18 +645,18 @@ class _HistoryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                      fontSize: 15,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
-                    dateLabel,
+                    '$dateLabel • ${record.responsavel ?? 'n/a'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF617886),
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                   if (pieceOfDayLabel != null)
@@ -658,19 +666,14 @@ class _HistoryCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF617886),
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   if (record.isAiReportStreaming) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     _AiStatusBadge(status: record.aiReportStatus),
                   ],
-                  const SizedBox(height: 4),
-                  _ConformityBadge(
-                    status: record.conformityStatus,
-                    compact: true,
-                  ),
                 ],
               ),
             ),
@@ -681,20 +684,25 @@ class _HistoryCard extends StatelessWidget {
               children: [
                 Text(
                   '${record.primaryValueMm.toStringAsFixed(3)} mm',
-                  textAlign: TextAlign.right,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
+                    fontSize: 14,
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
+                _ConformityBadge(
+                  status: record.conformityStatus,
+                  compact: true,
+                ),
+                const SizedBox(height: 6),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: Icon(
                         Icons.picture_as_pdf_outlined,
-                        size: 20,
+                        size: 18,
                         color: Theme.of(context).primaryColor,
                       ),
                       onPressed: onDownloadPdf,
@@ -702,11 +710,11 @@ class _HistoryCard extends StatelessWidget {
                       constraints: const BoxConstraints(),
                       tooltip: 'PDF',
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: Icon(
                         Icons.table_chart_outlined,
-                        size: 20,
+                        size: 18,
                         color: Theme.of(context).primaryColor,
                       ),
                       onPressed: onDownloadExcel,

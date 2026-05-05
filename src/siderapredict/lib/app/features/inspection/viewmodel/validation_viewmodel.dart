@@ -54,12 +54,13 @@ class ValidationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<MeasurementRecord?> save() async {
+  Future<MeasurementRecord?> save({String? responsavel}) async {
     return await _inspectionViewModel.saveCurrentDraft(
       pieceName: pieceName,
       conformityStatus: conformityStatus,
       nonConformityReason: nonConformityReason,
       nonConformityObservation: nonConformityObservation,
+      responsavel: responsavel,
     );
   }
 

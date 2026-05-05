@@ -11,6 +11,7 @@ import 'package:siderapredict/app/core/widgets/zoomable_image_overlay.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_viewmodel.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/validation_viewmodel.dart';
+import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
 
 class ValidacaoPage extends StatefulWidget {
   const ValidacaoPage({super.key, required this.draft});
@@ -44,7 +45,11 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
 
   Future<void> _save() async {
     final viewModel = context.read<ValidationViewModel>();
-    final record = await viewModel.save();
+    final authViewModel = context.read<AuthViewModel>();
+    
+    final record = await viewModel.save(
+      responsavel: authViewModel.userName,
+    );
 
     if (!mounted) return;
 
@@ -69,7 +74,9 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
   void _retake() {
     final viewModel = context.read<ValidationViewModel>();
     final inspectionViewModel = context.read<InspectionViewModel>();
+
     viewModel.retake();
+
     Navigator.of(context).pushReplacementNamed(
       AppRoutes.camera,
       arguments: CameraArgs(cameras: inspectionViewModel.availableCameras),
@@ -103,6 +110,16 @@ class _ValidacaoPageState extends State<ValidacaoPage> {
         context: context,
         title: 'Validação',
         toolbarHeight: 86,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRoutes.menuPrincipal,
+              (route) => false,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(

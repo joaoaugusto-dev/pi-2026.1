@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:siderapredict/app/routes/app_routes.dart';
 import 'package:siderapredict/app/core/theme/theme.dart';
 
@@ -32,7 +33,12 @@ class _SplashPageState extends State<SplashPage>
   Future<void> _navigateToMenu() async {
     await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(AppRoutes.menuPrincipal);
+    
+    if (FirebaseAuth.instance.currentUser != null) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.menuPrincipal);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    }
   }
 
   @override

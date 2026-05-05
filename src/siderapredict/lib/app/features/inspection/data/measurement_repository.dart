@@ -47,6 +47,7 @@ class MeasurementRepository {
     ConformityStatus conformityStatus = ConformityStatus.ok,
     String? nonConformityReason,
     String? nonConformityObservation,
+    String? responsavel,
   }) async {
     final now = DateTime.now();
 
@@ -84,6 +85,7 @@ class MeasurementRepository {
       conformityStatus: conformityStatus,
       nonConformityReason: nonConformityReason,
       nonConformityObservation: nonConformityObservation,
+      responsavel: responsavel,
     );
 
     await _persistRecord(record);
@@ -193,6 +195,7 @@ class MeasurementRepository {
         conformityStatus: record.conformityStatus,
         nonConformityReason: record.nonConformityReason,
         nonConformityObservation: record.nonConformityObservation,
+        responsavel: record.responsavel,
       )) {
         lastPersisted = lastPersisted.copyWith(
           aiReport: chunk.fullText,

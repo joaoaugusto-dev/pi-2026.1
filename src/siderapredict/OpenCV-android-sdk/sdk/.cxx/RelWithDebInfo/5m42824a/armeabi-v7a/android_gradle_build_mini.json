@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/libcxx_helper/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/usr/bin/ninja",
+      "-C",
+      "/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/RelWithDebInfo/5m42824a/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/usr/bin/ninja",
+    "-C",
+    "/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/RelWithDebInfo/5m42824a/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "opencv_jni_shared::@6890427a1f51a3e7e1df": {
+      "artifactName": "opencv_jni_shared",
+      "abi": "armeabi-v7a",
+      "output": "/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/RelWithDebInfo/5m42824a/armeabi-v7a/libopencv_jni_shared.a",
+      "runtimeFiles": []
+    }
+  }
+}

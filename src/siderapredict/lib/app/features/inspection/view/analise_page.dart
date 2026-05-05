@@ -34,12 +34,23 @@ class _AnalisePageState extends State<AnalisePage> {
     if (!mounted) return;
 
     final draft = viewModel.currentDraft;
-    if (draft == null) {
+    if (draft == null || !draft.isValidMeasurement) {
+      String errorMessage = viewModel.lastError ?? 'Não foi possível processar a imagem.';
+      if (draft != null && !draft.isValidMeasurement) {
+        if (!draft.calibrationSuccess) {
+          errorMessage = 'Falha na calibração. A prancheta ArUco não foi totalmente detectada. Tente melhorar o enquadramento ou iluminação.';
+        } else if (!draft.objectFound) {
+          errorMessage = 'Peça não encontrada no centro da prancheta. Tente novamente.';
+        } else {
+          errorMessage = 'Não foi possível extrair medidas válidas da peça. A foto pode estar borrada.';
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            viewModel.lastError ?? 'Não foi possível processar a imagem.',
-          ),
+          content: Text(errorMessage),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 4),
         ),
       );
       Navigator.of(context).pop();
