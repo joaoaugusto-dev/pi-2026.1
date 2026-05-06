@@ -30,8 +30,8 @@ Justificativa: Facilita a análise de KPIs de produção.
 Não é permitido o cadastro de dois usuários com o mesmo e-mail ou a mesma matrícula.
 Justificativa: Garante a integridade e rastreabilidade individual das inspeções.
 
-**RN08 — Segurança de Senha**
-As senhas devem possuir um nível mínimo de complexidade para garantir a segurança das contas dos operadores.
-Justificativa: Proteção de dados e conformidade com boas práticas de segurança.
+**RN08 — Validação de Senha em Tempo Real**
+As senhas devem possuir no mínimo 8 caracteres e a confirmação deve ser validada visualmente no momento da digitação.
+Justificativa: Melhora a experiência do usuário (UX) e garante que o operador não cometa erros durante o cadastro.
 
 ---

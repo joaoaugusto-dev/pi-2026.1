@@ -86,17 +86,22 @@
 
 **Fluxo Principal:**
 1. O operador acessa a tela de cadastro.
-2. O operador insere seu nome completo, matrícula, e-mail e define uma senha.
-3. O sistema valida se a matrícula e o e-mail já não estão em uso.
-4. O sistema valida a força da senha e a confirmação.
-5. O sistema cria a conta e autentica o usuário automaticamente.
-6. O sistema redireciona para o painel principal.
+2. O operador insere seu nome completo, matrícula e e-mail.
+3. O operador define uma senha e a confirma no campo abaixo.
+4. O sistema valida em tempo real se as senhas coincidem e se atendem aos requisitos mínimos, fornecendo feedback visual imediato.
+5. O sistema valida se a matrícula e o e-mail já não estão em uso ao tentar submeter.
+6. O sistema cria a conta e autentica o usuário automaticamente.
+7. O sistema redireciona para o painel principal.
 
 **Fluxos Alternativos:**
 - 3a. Caso o e-mail ou matrícula já existam, o sistema exibe mensagem de erro e solicita correção.
 
 **Pós-condições:**
 - O novo usuário é registrado no banco de dados e autenticado.
+
+### Diagramas
+![Diagrama de atividades UC04](diagrams/UC04_activities.png)
+![Diagrama de sequência UC04](diagrams/UC04_sequence.png)
 
 ---
 
@@ -107,15 +112,20 @@
 
 **Fluxo Principal:**
 1. O operador abre o aplicativo na tela de login.
-2. O operador insere seu identificador (E-mail ou Matrícula) e senha.
-3. O sistema valida as credenciais via Firebase Auth.
-4. O sistema carrega o perfil do usuário e seu nome.
-5. O sistema redireciona para o painel principal.
+2. O operador insere seu identificador (E-mail ou Matrícula) em um único campo.
+3. O operador insere sua senha.
+4. O sistema valida as credenciais via Firebase Auth.
+5. O sistema carrega o perfil do usuário e seu nome.
+6. O sistema redireciona para o painel principal.
 
 **Fluxos Alternativos:**
 - 3a. Caso as credenciais sejam inválidas, o sistema exibe mensagem de erro.
 
 **Pós-condições:**
 - O usuário ganha acesso às funcionalidades restritas e histórico personalizado.
+
+### Diagramas
+![Diagrama de atividades UC05](diagrams/UC05_activities.png)
+![Diagrama de sequência UC05](diagrams/UC05_sequence.png)
 
 ---

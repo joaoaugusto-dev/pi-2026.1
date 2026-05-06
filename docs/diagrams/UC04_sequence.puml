@@ -1,0 +1,25 @@
+@startuml UC04 - Realizar Cadastro
+title UC04 - Realizar Cadastro (Sequência)
+
+actor Operador
+participant "App (SignupPage)" as App
+participant "AuthViewModel" as VM
+participant "Firebase Auth" as Auth
+participant "Cloud Firestore" as DB
+
+Operador -> App: Preencher dados (Nome, E-mail, Matrícula)
+Operador -> App: Digitar Senha e Confirmação
+App -> App: Validar correspondência em tempo real
+App -> Operador: Exibir visual feedback (Match/No Match)
+
+Operador -> App: Clicar em "Cadastrar"
+App -> VM: signUp(nome, email, matricula, senha)
+VM -> Auth: createUserWithEmailAndPassword()
+Auth --> VM: Success (UserCredential)
+
+VM -> DB: Salvar dados extras (matricula, nome)
+DB --> VM: Success
+
+VM --> App: Cadastro concluído
+App -> Operador: Navegar para Home
+@enduml

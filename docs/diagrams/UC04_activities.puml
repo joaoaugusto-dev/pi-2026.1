@@ -1,0 +1,30 @@
+@startuml UC04 - Realizar Cadastro
+title UC04 - Realizar Cadastro (Atividades)
+
+start
+:Acessar Tela de Cadastro;
+repeat
+  :Inserir Nome, Matrícula e E-mail;
+  :Inserir Senha e Confirmação;
+  if (Senhas coincidem e são válidas?) then (sim)
+    :Habilitar Botão de Cadastro;
+    :Exibir Feedback Positivo;
+  else (não)
+    :Desabilitar Botão;
+    :Exibir Erro de Validação;
+  endif
+repeat while (Operador corrigindo dados?) is (sim)
+->não;
+:Clicar em Cadastrar;
+:Validar Unicidade (Firebase);
+if (E-mail/Matrícula já existem?) then (não)
+  :Criar Conta no Firebase Auth;
+  :Salvar Perfil no Firestore;
+  :Autenticação Automática;
+  :Redirecionar para Dashboard;
+  stop
+else (sim)
+  :Exibir Erro: "Usuário já cadastrado";
+  detach
+endif
+@enduml

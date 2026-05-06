@@ -44,11 +44,11 @@
 **Contexto:** Gerenciar o acesso dos operadores e garantir a personalização e segurança dos dados.
 
 - **US08 — Cadastro de Operadores**
-  - Como novo operador, desejo criar uma conta com meus dados profissionais (matrícula).
-  - Critério: Registro no Firebase e validação de duplicidade.
+  - Como novo operador, desejo criar uma conta com meus dados profissionais (matrícula) e e-mail.
+  - Critério: Registro no Firebase, validação de duplicidade e feedback visual de senha em tempo real.
 
-- **US09 — Login Flexível (E-mail ou Matrícula)**
-  - Como operador, desejo entrar no sistema usando minha matrícula ou e-mail.
-  - Critério: Autenticação bem-sucedida e persistência da sessão.
+- **US09 — Login Unificado**
+  - Como operador, desejo entrar no sistema usando minha matrícula ou e-mail em um único campo.
+  - Critério: Autenticação bem-sucedida, persistência da sessão e interface simplificada sem seletores de tipo.
 
 ---

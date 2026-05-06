@@ -51,12 +51,12 @@ O sistema deve ser de fácil e intuitivo uso até para operadores com pouca expe
 Critério: Interface limpa e fluxos simplificados.
 
 **RF13 — Cadastro de Usuário**
-O sistema deve permitir que novos usuários se cadastrem para acessar funcionalidades personalizadas e rastreabilidade.
-Critério: Coleta de Nome, E-mail, Matrícula e Senha.
+O sistema deve permitir que novos usuários se cadastrem, oferecendo validação visual imediata dos dados.
+Critério: Coleta de Nome, E-mail, Matrícula e Senha (com confirmação e validação de força em tempo real).
 
-**RF14 — Autenticação de Usuário**
-O sistema deve permitir que usuários realizem login para acessar o sistema.
-Critério: Login via E-mail ou Matrícula e Senha.
+**RF14 — Autenticação de Usuário (Login Unificado)**
+O sistema deve permitir que usuários realizem login através de um campo unificado de identificação.
+Critério: Login via E-mail ou Matrícula (detecção automática) e Senha.
 
 **RF15 — Gerenciamento de Sessão**
 O sistema deve manter o usuário conectado entre utilizações do aplicativo, evitando logins repetitivos.
