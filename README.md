@@ -1,5 +1,7 @@
 # SIDERA PREDICT — Sistema Inteligente de Inspeção Dimensional
 
+![Fluxo Principal de Operação](docs/diagrams/main_flow_sequence.png)
+
 ---
 
 ## 1. Visão Geral do Projeto
@@ -45,12 +47,15 @@ O SIDERA PREDICT tem como objetivos principais:
 
 O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
 
-- **Sistema de Marcadores:** Uma base com quatro marcadores (Ar Markers) específicos que permitem ao software calcular dimensões reais em cm/mm com precisão.
-- **Captura Assistida:** O uso dos sensores do celular (giroscópio) garante que o dispositivo mantenha um ângulo de 90º em relação à peça, eliminando distorções de perspectiva.
-- **Medição por Imagem:** O app extrai as medidas reais da peça capturada via câmera.
-- **Interpretação Humana Assistida:** O operador compara a medida lida pelo app com o desenho técnico da peça.
-- **Gerenciamento de Acessos:** Sistema de cadastro e login para garantir a segurança e a rastreabilidade individual de cada inspeção realizada.
-- **Geração de Relatórios e Rastreabilidade:** Histórico de medições exportável (Excel/PDF) com identificação automática do responsável (operador autenticado) e armazenamento em banco de dados para auditoria.
+- **Medição Dimensional Assistida:** O app extrai as medidas reais da peça capturada via câmera, utilizando um sistema de quatro marcadores físicos para calibração e sensores do celular para garantir o ângulo de 90º.
+  - ![Inspeção Dimensional](docs/diagrams/UC01_sequence.png)
+- **Interpretação e Validação:** O operador compara a medida lida pelo app com o desenho técnico e registra a conformidade ou não conformidade.
+  - ![Registro de Não Conformidade](docs/diagrams/UC02_sequence.png)
+- **Gerenciamento de Acessos:** Sistema de cadastro with validação em tempo real e login unificado para garantir a segurança e a rastreabilidade individual.
+  - ![Cadastro de Usuário](docs/diagrams/UC04_sequence.png)
+  - ![Login de Usuário](docs/diagrams/UC05_sequence.png)
+- **Relatórios e Rastreabilidade:** Histórico de medições exportável com identificação automática do responsável e armazenamento em nuvem.
+  - ![Histórico e Exportação](docs/diagrams/UC03_sequence.png)
 
 ---
 

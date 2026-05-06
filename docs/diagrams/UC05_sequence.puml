@@ -1,0 +1,24 @@
+@startuml UC05 - Realizar Login
+title UC05 - Realizar Login (Sequência)
+
+actor Operador
+participant "App (LoginPage)" as App
+participant "AuthViewModel" as VM
+participant "Cloud Firestore" as DB
+participant "Firebase Auth" as Auth
+
+Operador -> App: Inserir Identificador e Senha
+Operador -> App: Clicar em "Entrar"
+App -> VM: signIn(identificador, senha)
+
+alt Identificador é Matrícula
+  VM -> DB: Buscar e-mail por matrícula
+  DB --> VM: E-mail encontrado
+end
+
+VM -> Auth: signInWithEmailAndPassword(email, senha)
+Auth --> VM: Success (UserCredential)
+
+VM --> App: Login bem-sucedido
+App -> Operador: Navegar para Home
+@enduml

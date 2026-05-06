@@ -1,0 +1,33 @@
+@startuml Main Flow Sequence - SIDERA PREDICT
+title Fluxo Principal de Operação - SIDERA PREDICT
+
+actor Operador
+participant "App (UI)" as App
+participant "Vision Engine" as Vision
+database "Firebase (Auth/DB)" as Cloud
+
+== Autenticação ==
+Operador -> App: Inserir E-mail/Matrícula e Senha
+App -> Cloud: Autenticar Usuário
+Cloud --> App: Sucesso e Perfil do Operador
+
+== Inspeção Dimensional ==
+Operador -> App: Iniciar Nova Inspeção
+App -> Operador: Solicitar Alinhamento (90º)
+Operador -> App: Capturar Imagem da Peça
+App -> Vision: Processar Marcadores e Geometria
+Vision --> App: Medidas Extraídas (mm/cm)
+
+== Validação e Registro ==
+App -> Operador: Exibir Medidas Sobrepostas
+Operador -> App: Validar com Desenho (OK/NOK)
+App -> Cloud: Registrar Inspeção e Responsável
+Cloud --> App: Confirmação de Salvamento
+
+== Gestão de Dados ==
+Operador -> App: Acessar Histórico
+App -> Cloud: Buscar Inspeções Recentes
+Cloud --> App: Lista de Registros
+App -> Operador: Exibir Histórico e Opção de Exportar (PDF/XLSX)
+
+@enduml

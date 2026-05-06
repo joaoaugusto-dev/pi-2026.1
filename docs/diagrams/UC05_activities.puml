@@ -1,0 +1,31 @@
+@startuml UC05 - Realizar Login
+title UC05 - Realizar Login (Atividades)
+
+start
+:Abrir Aplicativo;
+:Acessar Tela de Login;
+:Inserir Identificador (E-mail ou Matrícula);
+:Inserir Senha;
+:Clicar em Entrar;
+:Processar Identificador;
+if (É E-mail?) then (sim)
+  :Tentar Login Direto;
+else (não)
+  :Buscar E-mail associado à Matrícula no Firestore;
+  if (Matrícula encontrada?) then (sim)
+    :Tentar Login com E-mail recuperado;
+  else (não)
+    :Exibir Erro: "Usuário não encontrado";
+    stop
+  endif
+endif
+
+if (Senha correta?) then (sim)
+  :Persistir Sessão;
+  :Redirecionar para Dashboard;
+  stop
+else (não)
+  :Exibir Erro: "Credenciais inválidas";
+  stop
+endif
+@enduml
