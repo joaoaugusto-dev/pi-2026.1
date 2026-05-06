@@ -1,4 +1,3 @@
-
 # Requisitos Não Funcionais — SIDERA PREDICT
 
 ---
@@ -30,5 +29,9 @@ Critério: Testes em campo e validação com usuários finais.
 **RNF07 — Precisão Dimensional Confiável**
 O sistema deve garantir precisão dimensional compatível com as tolerâncias técnicas exigidas pelo processo.
 Critério: Validação com padrões de referência e calibração periódica.
+
+**RNF08 — Segurança e Proteção de Dados**
+O sistema deve garantir a proteção dos dados dos usuários e a segurança das comunicações com o backend.
+Critério: Uso de Firebase Auth e protocolos de segurança padrão.
 
 ---

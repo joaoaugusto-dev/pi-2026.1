@@ -35,8 +35,8 @@ O sistema deve permitir que o operador compare as medidas exibidas com o desenho
 Critério: Botões dedicados para OK/NOK.
 
 **RF09 — Registro Automático dos Resultados**
-O sistema deve registrar automaticamente os resultados de inspeção, associando data/hora e as medidas extraídas.
-Critério: Sincronização com banco de dados em nuvem.
+O sistema deve registrar automaticamente os resultados de inspeção, associando data/hora, as medidas extraídas e o nome do operador autenticado (responsável).
+Critério: Sincronização com banco de dados em nuvem e preenchimento automático do campo "Responsável".
 
 **RF10 — Geração de Histórico de Medições**
 O sistema deve manter um histórico acessível de todas as medições realizadas.
@@ -49,3 +49,15 @@ Critério: Exportação rápida via interface do app.
 **RF12 — Uso fácil e intuitivo**
 O sistema deve ser de fácil e intuitivo uso até para operadores com pouca experiência em tecnologia.
 Critério: Interface limpa e fluxos simplificados.
+
+**RF13 — Cadastro de Usuário**
+O sistema deve permitir que novos usuários se cadastrem para acessar funcionalidades personalizadas e rastreabilidade.
+Critério: Coleta de Nome, E-mail, Matrícula e Senha.
+
+**RF14 — Autenticação de Usuário**
+O sistema deve permitir que usuários realizem login para acessar o sistema.
+Critério: Login via E-mail ou Matrícula e Senha.
+
+**RF15 — Gerenciamento de Sessão**
+O sistema deve manter o usuário conectado entre utilizações do aplicativo, evitando logins repetitivos.
+Critério: Persistência de token de autenticação.

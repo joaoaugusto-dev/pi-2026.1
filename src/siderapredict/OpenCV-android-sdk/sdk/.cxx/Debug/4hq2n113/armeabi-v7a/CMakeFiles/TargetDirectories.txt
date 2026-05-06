@@ -1,3 +1,0 @@
-/home/joao/development/teste_opencv/medicao_opencv_funcionando/OpenCV-android-sdk/sdk/.cxx/Debug/4hq2n113/armeabi-v7a/CMakeFiles/opencv_jni_shared.dir
-/home/joao/development/teste_opencv/medicao_opencv_funcionando/OpenCV-android-sdk/sdk/.cxx/Debug/4hq2n113/armeabi-v7a/CMakeFiles/edit_cache.dir
-/home/joao/development/teste_opencv/medicao_opencv_funcionando/OpenCV-android-sdk/sdk/.cxx/Debug/4hq2n113/armeabi-v7a/CMakeFiles/rebuild_cache.dir

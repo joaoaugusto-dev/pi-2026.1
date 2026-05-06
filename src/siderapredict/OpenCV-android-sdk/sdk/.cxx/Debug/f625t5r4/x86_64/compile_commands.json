@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/.cxx/Debug/f625t5r4/x86_64",
-  "command": "/home/joao/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=x86_64-none-linux-android21 --sysroot=/home/joao/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -o CMakeFiles/opencv_jni_shared.dir/dummy.cpp.o -c /home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/libcxx_helper/dummy.cpp",
-  "file": "/home/joao/development/projetos/pi-2026.1/src/siderapredict/OpenCV-android-sdk/sdk/libcxx_helper/dummy.cpp"
-}
-]

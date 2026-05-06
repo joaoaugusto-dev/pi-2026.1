@@ -3,13 +3,19 @@ import 'package:siderapredict/app/core/theme/theme.dart';
 
 class PasswordValidatorWidget extends StatelessWidget {
   final String password;
+  final String confirmPassword;
 
-  const PasswordValidatorWidget({super.key, required this.password});
+  const PasswordValidatorWidget({
+    super.key,
+    required this.password,
+    required this.confirmPassword,
+  });
 
   bool get hasMinLength => password.length >= 8;
   bool get hasUppercase => password.contains(RegExp(r'[A-Z]'));
   bool get hasNumber => password.contains(RegExp(r'[0-9]'));
   bool get hasSpecial => password.contains(RegExp(r'[!@#\$&*~_.,^\-+=\|/\\(){}\[\]]'));
+  bool get passwordsMatch => password.isNotEmpty && password == confirmPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +45,7 @@ class PasswordValidatorWidget extends StatelessWidget {
           _buildRule('Uma letra maiúscula', hasUppercase),
           _buildRule('Um número', hasNumber),
           _buildRule('Um caractere especial', hasSpecial),
+          _buildRule('As senhas coincidem', passwordsMatch),
         ],
       ),
     );

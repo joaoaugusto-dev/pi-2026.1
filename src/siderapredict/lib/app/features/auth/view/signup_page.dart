@@ -32,7 +32,6 @@ class _SignupPageState extends State<SignupPage> {
   final _formKeyMatricula = GlobalKey<FormState>();
   final _formKeyEmail = GlobalKey<FormState>();
   final _formKeySenha = GlobalKey<FormState>();
-  final _formKeyConfirm = GlobalKey<FormState>();
 
   final _pageController = PageController();
   int _currentStep = 0;
@@ -69,14 +68,6 @@ class _SignupPageState extends State<SignupPage> {
         }
       }
 
-      // 3. Password rule validation
-      if (_currentStep == 3) {
-        final pwd = _passwordEC.text;
-        if (pwd.length < 8 || !pwd.contains(RegExp(r'[A-Z]')) || !pwd.contains(RegExp(r'[0-9]')) || !pwd.contains(RegExp(r'[!@#\$&*~_.,^\-+=\|/\\(){}\[\]]'))) {
-           return; 
-        }
-      }
-
       viewModel.clearError();
       setState(() => _currentStep++);
       _pageController.nextPage(
@@ -96,7 +87,16 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   void _signup(AuthViewModel viewModel) async {
-    if (_formKeyConfirm.currentState?.validate() ?? false) {
+    if (_formKeySenha.currentState?.validate() ?? false) {
+      // Password rule validation
+      final pwd = _passwordEC.text;
+      if (pwd.length < 8 ||
+          !pwd.contains(RegExp(r'[A-Z]')) ||
+          !pwd.contains(RegExp(r'[0-9]')) ||
+          !pwd.contains(RegExp(r'[!@#\$&*~_.,^\-+=\|/\\(){}\[\]]'))) {
+        return;
+      }
+
       final success = await viewModel.signUp(
         email: _emailEC.text,
         password: _passwordEC.text,
@@ -141,7 +141,7 @@ class _SignupPageState extends State<SignupPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
-                    children: List.generate(5, (index) => Expanded(
+                    children: List.generate(4, (index) => Expanded(
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         height: 4,
@@ -214,8 +214,8 @@ class _SignupPageState extends State<SignupPage> {
                         onNext: () => _nextStep(viewModel, _formKeyEmail),
                       ),
                       _buildStep(
-                        title: 'Crie uma senha forte',
-                        subtitle: 'Ela deve seguir as regras de segurança',
+                        title: 'Crie sua senha',
+                        subtitle: 'Ela deve ser forte e segura',
                         formKey: _formKeySenha,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -226,34 +226,31 @@ class _SignupPageState extends State<SignupPage> {
                               prefixIcon: Icons.lock_outline,
                               obscureText: true,
                               textInputAction: TextInputAction.next,
-                              onSubmitted: (_) => _nextStep(viewModel, _formKeySenha),
                             ),
                             const SizedBox(height: 16),
-                            ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _passwordEC,
-                              builder: (context, value, child) {
-                                return PasswordValidatorWidget(password: value.text);
+                            PremiumTextField(
+                              controller: _confirmPasswordEC,
+                              labelText: 'Confirmar Senha',
+                              prefixIcon: Icons.lock_outline,
+                              obscureText: true,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _signup(viewModel),
+                              validator: Validatorless.multiple([
+                                Validatorless.required('Confirmação obrigatória'),
+                                Validatorless.compare(_passwordEC, 'As senhas não coincidem'),
+                              ]),
+                            ),
+                            const SizedBox(height: 24),
+                            ListenableBuilder(
+                              listenable: Listenable.merge([_passwordEC, _confirmPasswordEC]),
+                              builder: (context, child) {
+                                return PasswordValidatorWidget(
+                                  password: _passwordEC.text,
+                                  confirmPassword: _confirmPasswordEC.text,
+                                );
                               },
                             ),
                           ],
-                        ),
-                        onNext: () => _nextStep(viewModel, _formKeySenha),
-                      ),
-                      _buildStep(
-                        title: 'Confirme sua senha',
-                        subtitle: 'Para garantir que você não digitou errado',
-                        formKey: _formKeyConfirm,
-                        child: PremiumTextField(
-                          controller: _confirmPasswordEC,
-                          labelText: 'Confirmar Senha',
-                          prefixIcon: Icons.lock_outline,
-                          obscureText: true,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _signup(viewModel),
-                          validator: Validatorless.multiple([
-                            Validatorless.required('Confirmação obrigatória'),
-                            Validatorless.compare(_passwordEC, 'As senhas não coincidem'),
-                          ]),
                         ),
                         onNext: () => _signup(viewModel),
                         isLast: true,
