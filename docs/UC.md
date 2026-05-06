@@ -20,7 +20,7 @@
 6. O sistema exibe as medidas sobrepostas à imagem da peça.
 7. O operador compara os valores exibidos com o desenho técnico da peça.
 8. O operador seleciona o status da peça: "Conforme" (OK) ou "Não Conforme" (NOK).
-9. O sistema registra automaticamente a inspeção no banco de dados.
+9. O sistema registra automaticamente a inspeção no banco de dados, vinculando o nome do operador autenticado como responsável para garantir a rastreabilidade.
 
 **Fluxos Alternativos:**
 - 5a. Caso os marcadores não sejam detectados, o sistema solicita nova captura.
@@ -76,5 +76,46 @@
 ### Diagramas
 ![Diagrama de atividades UC03](diagrams/UC03_activities.png)
 ![Diagrama de sequência UC03](diagrams/UC03_sequence.png)
+
+---
+
+## UC04 — Realizar Cadastro
+**Descrição:** Permite que um novo operador crie uma conta no sistema.
+
+**Atores:** Operador, Sistema
+
+**Fluxo Principal:**
+1. O operador acessa a tela de cadastro.
+2. O operador insere seu nome completo, matrícula, e-mail e define uma senha.
+3. O sistema valida se a matrícula e o e-mail já não estão em uso.
+4. O sistema valida a força da senha e a confirmação.
+5. O sistema cria a conta e autentica o usuário automaticamente.
+6. O sistema redireciona para o painel principal.
+
+**Fluxos Alternativos:**
+- 3a. Caso o e-mail ou matrícula já existam, o sistema exibe mensagem de erro e solicita correção.
+
+**Pós-condições:**
+- O novo usuário é registrado no banco de dados e autenticado.
+
+---
+
+## UC05 — Realizar Login
+**Descrição:** Permite que um operador autenticado acesse suas informações e histórico.
+
+**Atores:** Operador, Sistema
+
+**Fluxo Principal:**
+1. O operador abre o aplicativo na tela de login.
+2. O operador insere seu identificador (E-mail ou Matrícula) e senha.
+3. O sistema valida as credenciais via Firebase Auth.
+4. O sistema carrega o perfil do usuário e seu nome.
+5. O sistema redireciona para o painel principal.
+
+**Fluxos Alternativos:**
+- 3a. Caso as credenciais sejam inválidas, o sistema exibe mensagem de erro.
+
+**Pós-condições:**
+- O usuário ganha acesso às funcionalidades restritas e histórico personalizado.
 
 ---

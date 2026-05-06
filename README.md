@@ -49,7 +49,8 @@ O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
 - **Captura Assistida:** O uso dos sensores do celular (giroscópio) garante que o dispositivo mantenha um ângulo de 90º em relação à peça, eliminando distorções de perspectiva.
 - **Medição por Imagem:** O app extrai as medidas reais da peça capturada via câmera.
 - **Interpretação Humana Assistida:** O operador compara a medida lida pelo app com o desenho técnico da peça.
-- **Geração de Relatórios:** Histórico de medições exportável (Excel/PDF) e armazenamento em banco de dados para auditoria.
+- **Gerenciamento de Acessos:** Sistema de cadastro e login para garantir a segurança e a rastreabilidade individual de cada inspeção realizada.
+- **Geração de Relatórios e Rastreabilidade:** Histórico de medições exportável (Excel/PDF) com identificação automática do responsável (operador autenticado) e armazenamento em banco de dados para auditoria.
 
 ---
 
@@ -78,6 +79,7 @@ O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
 
 * **Framework:** Flutter (Android/iOS)
 * **Visão Computacional:** OpenCV / Native Vision Engine
+* **Autenticação:** Firebase Auth
 * **Base de Dados:** Firebase / Cloud Firestore
 * **Relatórios:** Exportação Excel/PDF / Integração DB
 * **Hardware:** Dispositivos móveis (Celulares/Tablets)

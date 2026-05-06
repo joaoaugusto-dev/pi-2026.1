@@ -19,11 +19,19 @@ Para garantir a precisão de 1,5 mm, o dispositivo deve ser mantido em um faceam
 Justificativa: Evita distorções de perspectiva que invalidam a medição.
 
 **RN05 — Rastreabilidade Total**
-Toda medição realizada pelo aplicativo deve ser registrada no banco de dados, independentemente do resultado (conforme ou não conforme).
-Justificativa: Garante dados para auditoria e melhoria contínua do processo.
+Toda medição realizada pelo aplicativo deve ser registrada no banco de dados, vinculando obrigatoriamente o nome do operador responsável (usuário autenticado), independentemente do resultado (conforme ou não conforme).
+Justificativa: Garante dados para auditoria, identificação de responsáveis e melhoria contínua do processo através da IA.
 
 **RN06 — Exportação de Dados**
 Os dados do histórico de medições devem ser exportáveis para Excel e PDF para análise e integração com sistemas de gestão da fábrica.
 Justificativa: Facilita a análise de KPIs de produção.
+
+**RN07 — Unicidade de Identificadores**
+Não é permitido o cadastro de dois usuários com o mesmo e-mail ou a mesma matrícula.
+Justificativa: Garante a integridade e rastreabilidade individual das inspeções.
+
+**RN08 — Segurança de Senha**
+As senhas devem possuir um nível mínimo de complexidade para garantir a segurança das contas dos operadores.
+Justificativa: Proteção de dados e conformidade com boas práticas de segurança.
 
 ---

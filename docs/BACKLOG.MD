@@ -28,7 +28,7 @@
 
 - **US05 — Salvamento em Banco de Dados (Firebase)**
   - Como sistema, desejo salvar cada inspeção automaticamente na nuvem.
-  - Critério: Data e medidas.
+  - Critério: Data, medidas e nome do responsável (rastreabilidade).
 
 - **US06 — Histórico de Inspeções no App**
   - Como inspetor, desejo visualizar uma lista das últimas peças medidas.
@@ -37,5 +37,18 @@
 - **US07 — Exportação para Excel e PDF**
   - Como gestor, desejo exportar os dados gerados em arquivo Excel ou PDF para análise e entendimento.
   - Critério: Download de arquivo XLSX/PDF.
+
+---
+
+## Épico 3: Autenticação e Perfil
+**Contexto:** Gerenciar o acesso dos operadores e garantir a personalização e segurança dos dados.
+
+- **US08 — Cadastro de Operadores**
+  - Como novo operador, desejo criar uma conta com meus dados profissionais (matrícula).
+  - Critério: Registro no Firebase e validação de duplicidade.
+
+- **US09 — Login Flexível (E-mail ou Matrícula)**
+  - Como operador, desejo entrar no sistema usando minha matrícula ou e-mail.
+  - Critério: Autenticação bem-sucedida e persistência da sessão.
 
 ---
