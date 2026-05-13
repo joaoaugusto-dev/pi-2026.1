@@ -133,7 +133,7 @@ Map<String, dynamic> _analyzeImageInBackground({
     int? markerCount;
     int? charucoCornerCount;
     String? errorMessage;
-    double markerSizeMm = 10.0;
+    double markerSizeMm = 11.0;
     List<double> holeDiametersMm = const [];
     List<double> holeSpacingMm = const [];
     List<double> slotWidthsMm = const [];

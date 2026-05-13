@@ -155,7 +155,7 @@ class _TopAlertWidgetState extends State<_TopAlertWidget> with SingleTickerProvi
     );
 
     _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, 1.5),
+      begin: const Offset(0, -1.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
@@ -180,7 +180,7 @@ class _TopAlertWidgetState extends State<_TopAlertWidget> with SingleTickerProvi
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 24,
+      top: MediaQuery.of(context).padding.top + 24,
       left: 24,
       right: 24,
       child: SlideTransition(
@@ -201,7 +201,7 @@ class _TopAlertWidgetState extends State<_TopAlertWidget> with SingleTickerProvi
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 12,
-                      offset: const Offset(0, -4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),

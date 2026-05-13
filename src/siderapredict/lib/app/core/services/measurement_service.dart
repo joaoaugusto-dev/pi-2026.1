@@ -114,7 +114,7 @@ class MeasurementService {
       perimeterMm: (payload['perimeterMm'] as num? ?? 0).toDouble(),
       areaMm2: (payload['areaMm2'] as num? ?? 0).toDouble(),
       scaleMicronsPerPx: (payload['scaleMicronsPerPx'] as num?)?.toDouble(),
-      markerSizeMm: (payload['markerSizeMm'] as num? ?? 10).toDouble(),
+      markerSizeMm: (payload['markerSizeMm'] as num? ?? 11).toDouble(),
       segments: segments
           .where((segment) => segment.valueMm > 0)
           .toList(growable: false),

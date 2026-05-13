@@ -290,7 +290,7 @@ class MeasurementDraft {
       perimeterMm: (json['perimeterMm'] as num? ?? 0).toDouble(),
       areaMm2: (json['areaMm2'] as num? ?? 0).toDouble(),
       scaleMicronsPerPx: (json['scaleMicronsPerPx'] as num?)?.toDouble(),
-      markerSizeMm: (json['markerSizeMm'] as num? ?? 10).toDouble(),
+      markerSizeMm: (json['markerSizeMm'] as num? ?? 11).toDouble(),
       segments: rawSegments
           .map(PieceSegmentMeasurement.fromJson)
           .toList(growable: false),

@@ -11,13 +11,18 @@
 
 namespace {
 
-constexpr float kMarkerSquareMm = 10.0f;
+constexpr float kMarkerSquareMm = 11.0f;
 constexpr float kWarpUpscale = 1.0f;
 constexpr float kMinWarpOutputPx = 2400.0f;
 constexpr float kMaxWarpOutputPx = 5200.0f;
 constexpr float kMinDisplayEdgeMm = 4.0f;
 constexpr float kMinAngleDeviationDeg = 6.0f;
 constexpr float kMinVertexAngleDeg = 25.0f;
+constexpr float kMaxExternalArcRadiusMm = 22.0f;
+constexpr float kMinHoughCircleSupport = 0.28f;
+constexpr float kMinContourCircleSupport = 0.30f;
+constexpr float kMinContourCircularity = 0.48f;
+constexpr float kElongatedCavityAspectRatio = 1.35f;
 
 struct MetricScale {
   float mm_per_px_x = 0.0f;
@@ -105,6 +110,23 @@ bool touchesBorder(const cv::Rect &bbox, int width, int height, int margin) {
          (bbox.y + bbox.height) >= (height - margin);
 }
 
+void drawFilledContourMask(const std::vector<cv::Point> &contour,
+                           cv::Mat *mask) {
+  if (mask == nullptr || mask->empty() || contour.empty()) {
+    return;
+  }
+  const std::vector<std::vector<cv::Point>> contours = {contour};
+  cv::drawContours(*mask, contours, -1, cv::Scalar(255), cv::FILLED);
+}
+
+float distanceToContour(const std::vector<cv::Point> &contour,
+                        const cv::Point2f &point) {
+  if (contour.empty()) {
+    return -std::numeric_limits<float>::max();
+  }
+  return static_cast<float>(cv::pointPolygonTest(contour, point, true));
+}
+
 float median(std::vector<float> values) {
   if (values.empty()) {
     return 0.0f;
@@ -121,6 +143,16 @@ float clampUnit(float value) { return std::max(-1.0f, std::min(1.0f, value)); }
 
 float cross2d(const cv::Point2f &a, const cv::Point2f &b) {
   return (a.x * b.y) - (a.y * b.x);
+}
+
+float normalizeAngle360(float angle_deg) {
+  while (angle_deg < 0.0f) {
+    angle_deg += 360.0f;
+  }
+  while (angle_deg >= 360.0f) {
+    angle_deg -= 360.0f;
+  }
+  return angle_deg;
 }
 
 float effectiveMmPerPx(const MetricScale &scale) {
@@ -144,6 +176,46 @@ float radiusMm(float radius_px, const MetricScale &scale) {
   return radius_px * effectiveMmPerPx(scale);
 }
 
+bool isSameHoleCandidate(const HoleCircle &a, const HoleCircle &b) {
+  if (a.radius_px <= 0.0f || b.radius_px <= 0.0f) {
+    return false;
+  }
+
+  const float center_dist = static_cast<float>(cv::norm(a.center - b.center));
+  const float max_radius = std::max(a.radius_px, b.radius_px);
+  const float min_radius = std::min(a.radius_px, b.radius_px);
+  const float radius_dist = std::fabs(a.radius_px - b.radius_px);
+
+  const bool similar_radius =
+      radius_dist <= std::max(2.0f, 0.20f * (a.radius_px + b.radius_px));
+  const bool same_center =
+      center_dist <= std::max(3.0f, 0.42f * max_radius);
+  const bool nested_candidate =
+      center_dist <= std::max(3.0f, 0.30f * max_radius) &&
+      min_radius >= max_radius * 0.42f;
+
+  return (same_center && similar_radius) || nested_candidate;
+}
+
+bool shouldReplaceHoleCandidate(const HoleCircle &current,
+                                const HoleCircle &candidate) {
+  if (current.is_arc != candidate.is_arc) {
+    if (!candidate.is_arc && candidate.score >= current.score * 0.45f) {
+      return true;
+    }
+    if (candidate.is_arc && current.score >= candidate.score * 0.45f) {
+      return false;
+    }
+  }
+
+  if (candidate.radius_px > current.radius_px * 1.12f &&
+      candidate.score >= current.score * 0.70f) {
+    return true;
+  }
+
+  return candidate.score > current.score;
+}
+
 void mergeCircleCandidate(std::vector<HoleCircle> *circles,
                           const HoleCircle &candidate) {
   if (circles == nullptr || candidate.radius_px <= 0.0f) {
@@ -151,17 +223,8 @@ void mergeCircleCandidate(std::vector<HoleCircle> *circles,
   }
 
   for (HoleCircle &existing : *circles) {
-    const float center_dist =
-        static_cast<float>(cv::norm(existing.center - candidate.center));
-    const float radius_dist =
-        std::fabs(existing.radius_px - candidate.radius_px);
-    const float center_tol =
-        std::max(4.0f, 0.25f * (existing.radius_px + candidate.radius_px));
-    const float radius_tol =
-        std::max(2.0f, 0.18f * (existing.radius_px + candidate.radius_px));
-
-    if (center_dist <= center_tol && radius_dist <= radius_tol) {
-      if (candidate.score > existing.score) {
+    if (isSameHoleCandidate(existing, candidate)) {
+      if (shouldReplaceHoleCandidate(existing, candidate)) {
         existing = candidate;
       }
       return;
@@ -171,43 +234,188 @@ void mergeCircleCandidate(std::vector<HoleCircle> *circles,
   circles->push_back(candidate);
 }
 
-float circleEdgeSupportRatio(const cv::Mat &edge_map, const cv::Vec3f &circle) {
+void consolidateHoleCandidates(std::vector<HoleCircle> *circles) {
+  if (circles == nullptr || circles->size() < 2U) {
+    return;
+  }
+
+  std::sort(circles->begin(), circles->end(),
+            [](const HoleCircle &a, const HoleCircle &b) {
+              if (a.is_arc != b.is_arc) {
+                return !a.is_arc;
+              }
+              return a.score > b.score;
+            });
+
+  std::vector<HoleCircle> consolidated;
+  consolidated.reserve(circles->size());
+  for (const HoleCircle &candidate : *circles) {
+    bool merged = false;
+    for (HoleCircle &existing : consolidated) {
+      if (!isSameHoleCandidate(existing, candidate)) {
+        continue;
+      }
+      if (shouldReplaceHoleCandidate(existing, candidate)) {
+        existing = candidate;
+      }
+      merged = true;
+      break;
+    }
+    if (!merged) {
+      consolidated.push_back(candidate);
+    }
+  }
+
+  *circles = consolidated;
+}
+
+std::vector<int> sampleCircleAngularSupport(const cv::Mat &edge_map,
+                                            const cv::Point2f &center,
+                                            float radius) {
+  constexpr int kSamples = 360;
+  std::vector<int> support(kSamples, 0);
   if (edge_map.empty()) {
-    return 0.0f;
+    return support;
   }
 
-  const float cx = circle[0];
-  const float cy = circle[1];
-  const float radius = circle[2];
   if (radius <= 0.0f) {
-    return 0.0f;
+    return support;
   }
 
-  constexpr int kSamples = 96;
-  int hits = 0;
+  const int radial_tol =
+      std::max(2, std::min(5, static_cast<int>(std::round(radius * 0.045f))));
   for (int i = 0; i < kSamples; ++i) {
     const float theta = static_cast<float>((2.0 * CV_PI * i) / kSamples);
-    const int x = cvRound(cx + (std::cos(theta) * radius));
-    const int y = cvRound(cy + (std::sin(theta) * radius));
+    const float ct = std::cos(theta);
+    const float st = std::sin(theta);
 
-    bool found = false;
-    for (int dy = -1; dy <= 1 && !found; ++dy) {
-      for (int dx = -1; dx <= 1; ++dx) {
-        const int xx = x + dx;
-        const int yy = y + dy;
-        if (xx < 0 || yy < 0 || xx >= edge_map.cols || yy >= edge_map.rows) {
-          continue;
-        }
-        if (edge_map.at<unsigned char>(yy, xx) > 0U) {
-          found = true;
-          ++hits;
-          break;
+    for (int dr = -radial_tol; dr <= radial_tol && support[i] == 0; ++dr) {
+      const float sample_radius = std::max(1.0f, radius + static_cast<float>(dr));
+      const int x = cvRound(center.x + (ct * sample_radius));
+      const int y = cvRound(center.y + (st * sample_radius));
+
+      for (int dy = -1; dy <= 1 && support[i] == 0; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+          const int xx = x + dx;
+          const int yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= edge_map.cols || yy >= edge_map.rows) {
+            continue;
+          }
+          if (edge_map.at<unsigned char>(yy, xx) > 0U) {
+            support[i] = 1;
+            break;
+          }
         }
       }
     }
   }
 
-  return static_cast<float>(hits) / static_cast<float>(kSamples);
+  return support;
+}
+
+void closeSmallAngularGaps(std::vector<int> *support, int max_gap_deg) {
+  if (support == nullptr || support->empty() || max_gap_deg <= 0) {
+    return;
+  }
+
+  const int n = static_cast<int>(support->size());
+  std::vector<int> closed = *support;
+  for (int i = 0; i < n; ++i) {
+    if ((*support)[i] != 0) {
+      continue;
+    }
+
+    int len = 0;
+    while (len < n && (*support)[(i + len) % n] == 0) {
+      ++len;
+    }
+
+    if (len <= max_gap_deg) {
+      const int prev = (i - 1 + n) % n;
+      const int next = (i + len) % n;
+      if ((*support)[prev] != 0 && (*support)[next] != 0) {
+        for (int k = 0; k < len; ++k) {
+          closed[(i + k) % n] = 1;
+        }
+      }
+    }
+    i += std::max(0, len - 1);
+  }
+  *support = closed;
+}
+
+int countAngularSupport(const std::vector<int> &support) {
+  int total = 0;
+  for (const int v : support) {
+    total += (v != 0) ? 1 : 0;
+  }
+  return total;
+}
+
+void longestAngularRun(const std::vector<int> &support, int *start, int *length) {
+  if (start == nullptr || length == nullptr || support.empty()) {
+    return;
+  }
+
+  const int n = static_cast<int>(support.size());
+  *start = 0;
+  *length = 0;
+  for (int s = 0; s < n; ++s) {
+    if (support[s] == 0) {
+      continue;
+    }
+    int len = 0;
+    while (len < n && support[(s + len) % n] != 0) {
+      ++len;
+    }
+    if (len > *length) {
+      *length = len;
+      *start = s;
+    }
+    s += std::max(0, len - 1);
+  }
+}
+
+float circleEdgeSupportRatio(const cv::Mat &edge_map, const cv::Vec3f &circle) {
+  std::vector<int> support = sampleCircleAngularSupport(
+      edge_map, cv::Point2f(circle[0], circle[1]), circle[2]);
+  closeSmallAngularGaps(&support, 3);
+  return static_cast<float>(countAngularSupport(support)) /
+         static_cast<float>(std::max<size_t>(1U, support.size()));
+}
+
+float circleMaskFillRatio(const cv::Mat &mask, const cv::Point2f &center,
+                          float radius) {
+  if (mask.empty() || radius <= 1.0f) {
+    return 0.0f;
+  }
+
+  const int min_x = std::max(0, cvFloor(center.x - radius));
+  const int max_x = std::min(mask.cols - 1, cvCeil(center.x + radius));
+  const int min_y = std::max(0, cvFloor(center.y - radius));
+  const int max_y = std::min(mask.rows - 1, cvCeil(center.y + radius));
+  const float radius_sq = radius * radius;
+  int total = 0;
+  int filled = 0;
+
+  for (int y = min_y; y <= max_y; ++y) {
+    for (int x = min_x; x <= max_x; ++x) {
+      const float dx = static_cast<float>(x) - center.x;
+      const float dy = static_cast<float>(y) - center.y;
+      if ((dx * dx + dy * dy) > radius_sq) {
+        continue;
+      }
+      ++total;
+      if (mask.at<unsigned char>(y, x) > 0U) {
+        ++filled;
+      }
+    }
+  }
+
+  if (total == 0) {
+    return 0.0f;
+  }
+  return static_cast<float>(filled) / static_cast<float>(total);
 }
 
 // Detecta se um círculo detectado pelo Hough é na verdade um arco parcial
@@ -222,59 +430,23 @@ bool computeArcAngles(const cv::Mat &edge_map, const cv::Point2f &center_local,
   }
 
   constexpr int N = 360;
-  std::vector<int> support(N, 0);
+  std::vector<int> support =
+      sampleCircleAngularSupport(edge_map, center_local, radius);
+  closeSmallAngularGaps(&support, std::max(4, static_cast<int>(radius * 0.035f)));
 
-  for (int i = 0; i < N; ++i) {
-    const float theta =
-        static_cast<float>(i) * static_cast<float>(CV_PI) / 180.0f;
-    const int bx = cvRound(center_local.x + std::cos(theta) * radius);
-    const int by = cvRound(center_local.y + std::sin(theta) * radius);
-    // Varrer vizinhança dinâmica para evitar que retas cubram ângulos grandes
-    // em raios pequenos
-    const int max_d =
-        std::max(1, std::min(2, static_cast<int>(radius * 0.08f)));
-    for (int dy = -max_d; dy <= max_d && support[i] == 0; ++dy) {
-      for (int dx = -max_d; dx <= max_d && support[i] == 0; ++dx) {
-        const int xx = bx + dx;
-        const int yy = by + dy;
-        if (xx >= 0 && yy >= 0 && xx < edge_map.cols && yy < edge_map.rows &&
-            edge_map.at<uint8_t>(yy, xx) > 0) {
-          support[i] = 1;
-        }
-      }
-    }
-  }
-
-  int total = 0;
-  for (int s : support) {
-    total += s;
-  }
+  const int total = countAngularSupport(support);
   const float ratio = static_cast<float>(total) / static_cast<float>(N);
 
-  // Se suporte > 75%: provavelmente círculo completo
-  // Se suporte < 20%: sinal muito fraco, não confiável
-  if (ratio >= 0.75f || ratio < 0.20f) {
+  // Suporte quase completo é círculo, não arco. Suporte fraco vira ruído.
+  if (ratio >= 0.86f || ratio < 0.16f) {
     return false;
   }
 
-  // Encontrar o maior bloco contíguo de suporte (tratando wraparound em 360°)
-  int best_start = 0, best_len = 0;
-  for (int s = 0; s < N; ++s) {
-    if (support[s] == 0) {
-      continue;
-    }
-    int len = 0;
-    while (len < N && support[(s + len) % N] != 0) {
-      ++len;
-    }
-    if (len > best_len) {
-      best_len = len;
-      best_start = s;
-    }
-  }
+  int best_start = 0;
+  int best_len = 0;
+  longestAngularRun(support, &best_start, &best_len);
 
-  if (best_len <
-      90) { // Menos de 90° de arco contíguo → ignora (evita retas e ruídos)
+  if (best_len < 70 || best_len > 330) {
     return false;
   }
 
@@ -287,6 +459,13 @@ bool computeArcAngles(const cv::Mat &edge_map, const cv::Point2f &center_local,
   *arc_end = static_cast<float>((best_start + best_len) % N);
   return true;
 }
+
+bool fitCircleLeastSquares(const std::vector<cv::Point> &pts,
+                           cv::Point2f *center, float *radius);
+
+bool fitCircleRobust(const std::vector<cv::Point> &pts, cv::Point2f *center,
+                     float *radius, float *mean_abs_error,
+                     float *inlier_ratio);
 
 std::vector<HoleCircle>
 detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
@@ -314,12 +493,8 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   }
 
   cv::Mat piece_mask = cv::Mat::zeros(roi_gray.size(), CV_8U);
-  std::vector<cv::Point> hull_local;
   if (!outer_local.empty()) {
-    cv::convexHull(outer_local, hull_local);
-    const std::vector<std::vector<cv::Point>> piece_contours = {hull_local};
-    cv::drawContours(piece_mask, piece_contours, -1, cv::Scalar(255),
-                     cv::FILLED);
+    drawFilledContourMask(outer_local, &piece_mask);
   }
 
   cv::Mat dark_mask;
@@ -358,11 +533,13 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
 
   cv::Mat blur;
   cv::medianBlur(roi_gray, blur, 5);
+  cv::GaussianBlur(blur, blur, cv::Size(3, 3), 0.0);
 
-  // HoughCircles com param2 menor para detectar arcos parciais (semicírculos)
+  // HoughCircles é usado como gerador de candidatos; a aceitação vem do suporte
+  // angular e do merge com contornos ajustados por círculo.
   std::vector<cv::Vec3f> hough;
-  cv::HoughCircles(blur, hough, cv::HOUGH_GRADIENT, 1.5,
-                   std::max(8, min_radius * 2), 80, 18, min_radius, max_radius);
+  cv::HoughCircles(blur, hough, cv::HOUGH_GRADIENT, 1.2,
+                   std::max(8, min_radius * 2), 90, 20, min_radius, max_radius);
 
   for (const cv::Vec3f &c : hough) {
     const int cx = cvRound(c[0]);
@@ -371,14 +548,16 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
       continue;
     }
 
-    if (cavity_mask.at<unsigned char>(cy, cx) == 0U) {
+    const float support = circleEdgeSupportRatio(edge_map, c);
+    if (support < kMinHoughCircleSupport) {
       continue;
     }
 
-    const float support = circleEdgeSupportRatio(edge_map, c);
-    // 0.28 permite semicírculos (só metade da circunferência visível), mas
-    // evita retas
-    if (support < 0.28f) {
+    const bool center_on_cavity = cavity_mask.at<unsigned char>(cy, cx) > 0U;
+    const float cavity_fill =
+        circleMaskFillRatio(cavity_mask, cv::Point2f(c[0], c[1]),
+                            std::max(2.0f, c[2] * 0.70f));
+    if (!center_on_cavity && cavity_fill < 0.08f && support < 0.55f) {
       continue;
     }
 
@@ -389,24 +568,13 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
       continue;
     }
 
-    // Testar contra o convex hull para permitir detecção em aberturas
-    std::vector<cv::Point> global_hull;
-    if (!hull_local.empty()) {
-      global_hull.reserve(hull_local.size());
-      for (const cv::Point &p : hull_local) {
-        global_hull.emplace_back(p.x + roi_rect.x, p.y + roi_rect.y);
-      }
-    } else {
-      global_hull = outer_contour;
-    }
-
-    if (cv::pointPolygonTest(global_hull, candidate.center, false) < 0.0) {
+    const float contour_dist = distanceToContour(outer_contour, candidate.center);
+    if (contour_dist <= std::max(1.0f, candidate.radius_px * 0.08f)) {
       continue;
     }
 
-    // Detectar se é arco parcial (semicírculo) usando edge_map local da ROI
-    // Semicírculos ideais têm suporte e circularidade ao redor de 0.74, então 0.82 separa melhor de círculos completos
-    if (support < 0.82f) {
+    // Detectar se é arco parcial usando edge_map local da ROI.
+    if (support < 0.86f) {
       float arc_s = 0.0f;
       float arc_e = 360.0f;
       if (computeArcAngles(edge_map, cv::Point2f(c[0], c[1]), c[2], &arc_s,
@@ -415,7 +583,7 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
         candidate.arc_start_deg = arc_s;
         candidate.arc_end_deg = arc_e;
       } else {
-        // Se não tem suporte para círculo completo (< 0.82) e falhou no teste
+        // Se não tem suporte para círculo completo e falhou no teste
         // de arco, descarta
         continue;
       }
@@ -430,7 +598,7 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
 
   std::vector<std::vector<cv::Point>> hole_contours;
   cv::findContours(cavity_mask, hole_contours, cv::RETR_LIST,
-                   cv::CHAIN_APPROX_SIMPLE);
+                   cv::CHAIN_APPROX_NONE);
   for (const std::vector<cv::Point> &contour : hole_contours) {
     const double area = cv::contourArea(contour);
     // Aceitar de 0.20*circulo_min a 2.2*circulo_max (inclui semicírculos)
@@ -444,26 +612,6 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
       continue;
     }
 
-    HoleCircle candidate;
-    candidate.center =
-        cv::Point2f(static_cast<float>((m.m10 / m.m00) + roi_rect.x),
-                    static_cast<float>((m.m01 / m.m00) + roi_rect.y));
-
-    // Testar contra o convex hull para permitir detecção em aberturas
-    std::vector<cv::Point> global_hull;
-    if (!hull_local.empty()) {
-      global_hull.reserve(hull_local.size());
-      for (const cv::Point &p : hull_local) {
-        global_hull.emplace_back(p.x + roi_rect.x, p.y + roi_rect.y);
-      }
-    } else {
-      global_hull = outer_contour;
-    }
-
-    if (cv::pointPolygonTest(global_hull, candidate.center, false) < 0.0) {
-      continue;
-    }
-
     const float perimeter = static_cast<float>(cv::arcLength(contour, true));
     if (perimeter < 1.0f) {
       continue;
@@ -471,28 +619,62 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
 
     const float circularity =
         static_cast<float>((4.0 * CV_PI * area) / (perimeter * perimeter));
-    // 0.38 permite slots (pílulas) e semicírculos com ruído
-    if (circularity < 0.38f) {
+    if (circularity < kMinContourCircularity) {
       continue;
     }
 
+    const cv::RotatedRect rr = cv::minAreaRect(contour);
+    const float side_a = std::max(1.0f, rr.size.width);
+    const float side_b = std::max(1.0f, rr.size.height);
+    const float aspect = std::max(side_a, side_b) / std::min(side_a, side_b);
+    if (aspect > kElongatedCavityAspectRatio && circularity < 0.90f) {
+      // Rasgos/pílulas alongados são tratados por detectSlots; aqui eles
+      // geram falsos círculos nas extremidades.
+      continue;
+    }
+
+    float fit_error = 0.0f;
+    float inlier_ratio = 0.0f;
     float radius_px = 0.0f;
     cv::Point2f c_local;
-    cv::minEnclosingCircle(contour, c_local, radius_px);
+    if (!fitCircleRobust(contour, &c_local, &radius_px, &fit_error,
+                         &inlier_ratio)) {
+      continue;
+    }
     if (radius_px < static_cast<float>(min_radius) ||
         radius_px > static_cast<float>(max_radius)) {
       continue;
     }
 
+    const float area_ratio =
+        static_cast<float>(area / (CV_PI * radius_px * radius_px));
+    if (area_ratio < 0.36f || area_ratio > 1.30f) {
+      continue;
+    }
+
+    HoleCircle candidate;
+    candidate.center =
+        cv::Point2f(c_local.x + static_cast<float>(roi_rect.x),
+                    c_local.y + static_cast<float>(roi_rect.y));
+    const float contour_dist = distanceToContour(outer_contour, candidate.center);
+    if (contour_dist <= std::max(1.0f, radius_px * 0.08f)) {
+      continue;
+    }
+
+    const cv::Vec3f fitted_circle(c_local.x, c_local.y, radius_px);
+    const float support = circleEdgeSupportRatio(edge_map, fitted_circle);
+    if (support < kMinContourCircleSupport) {
+      continue;
+    }
+    if (area_ratio < 0.58f && support < 0.38f) {
+      continue;
+    }
+
     candidate.radius_px = radius_px;
-    // Verificar também se o contorno é arco parcial (circularity < 0.82 = não
-    // círculo completo)
-    if (circularity < 0.82f) {
+    if (support < 0.86f && circularity < 0.88f) {
       float arc_s = 0.0f;
       float arc_e = 360.0f;
-      const cv::Point2f local_center(static_cast<float>(m.m10 / m.m00),
-                                     static_cast<float>(m.m01 / m.m00));
-      if (computeArcAngles(edge_map, local_center, radius_px, &arc_s, &arc_e)) {
+      if (computeArcAngles(edge_map, c_local, radius_px, &arc_s, &arc_e)) {
         candidate.is_arc = true;
         candidate.arc_start_deg = arc_s;
         candidate.arc_end_deg = arc_e;
@@ -501,12 +683,18 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
         continue;
       }
     }
-    candidate.score = circularity * radius_px;
+    candidate.score =
+        radius_px * (0.45f + circularity + support + (0.25f * inlier_ratio)) -
+        fit_error;
     mergeCircleCandidate(&circles, candidate);
   }
 
+  consolidateHoleCandidates(&circles);
   std::sort(circles.begin(), circles.end(),
             [](const HoleCircle &a, const HoleCircle &b) {
+              if (a.is_arc != b.is_arc) {
+                return !a.is_arc;
+              }
               return a.score > b.score;
             });
 
@@ -855,10 +1043,15 @@ simplifyPolygonForTechnicalDrawing(const std::vector<cv::Point2f> &polygon,
           ((len_prev < min_edge_px) || (len_next < min_edge_px)) &&
           (std::fabs(180.0f - angle) <= 15.0f);
 
-      // Filtro de "spike" (ponta seca / pico de ruído): ângulo agudo com arestas curtas
+      const float triangle_height =
+          std::fabs(cross2d(next - prev, curr - prev)) / std::max(1.0f, len_skip);
+
+      // Remove só picos rasos de ruído. Ângulos agudos com altura real devem
+      // sobreviver para medição.
       const bool is_spike =
-          (angle < 60.0f) && (len_prev < min_edge_px * 2.5f) &&
-          (len_next < min_edge_px * 2.5f);
+          (angle < 45.0f) && (len_prev < min_edge_px * 2.0f) &&
+          (len_next < min_edge_px * 2.0f) &&
+          (triangle_height < min_edge_px * 0.75f);
 
       if (nearly_collinear || tiny_kink || is_spike) {
         simplified.erase(simplified.begin() + static_cast<std::ptrdiff_t>(i));
@@ -961,6 +1154,9 @@ LineModel fitLineToContourEdge(const std::vector<cv::Point> &contour,
   }
 
   const float tol_px = std::max(3.0f, edge_len * 0.045f);
+  const float endpoint_trim =
+      (edge_len > 30.0f) ? std::min(0.08f, std::max(0.02f, 6.0f / edge_len))
+                         : 0.0f;
   std::vector<cv::Point2f> samples;
   samples.reserve(contour.size());
 
@@ -968,7 +1164,7 @@ LineModel fitLineToContourEdge(const std::vector<cv::Point> &contour,
     const cv::Point2f p(static_cast<float>(cp.x), static_cast<float>(cp.y));
     const cv::Point2f ap = p - edge_start;
     const float t = (ap.x * edge_vec.x + ap.y * edge_vec.y) / edge_len_sq;
-    if (t < -0.10f || t > 1.10f) {
+    if (t < endpoint_trim || t > (1.0f - endpoint_trim)) {
       continue;
     }
 
@@ -1016,6 +1212,9 @@ LineModel fitLineToCannyEdge(const cv::Mat &edge_map,
   const float edge_len_sq = edge_len * edge_len;
   const cv::Point2f u = edge_vec * (1.0f / edge_len);
   const cv::Point2f n(-u.y, u.x); // normal
+  const float endpoint_trim =
+      (edge_len > 30.0f) ? std::min(0.08f, std::max(0.02f, 6.0f / edge_len))
+                         : 0.0f;
 
   // Varrer pixels de borda Canny em uma faixa estreita ao redor da aresta
   const float tol_px = std::max(4.0f, edge_len * 0.05f);
@@ -1044,7 +1243,7 @@ LineModel fitLineToCannyEdge(const cv::Mat &edge_map,
       const cv::Point2f p(static_cast<float>(x), static_cast<float>(y));
       const cv::Point2f ap = p - edge_start;
       const float t = (ap.x * edge_vec.x + ap.y * edge_vec.y) / edge_len_sq;
-      if (t < -0.05f || t > 1.05f)
+      if (t < endpoint_trim || t > (1.0f - endpoint_trim))
         continue;
 
       const float dist = std::fabs(cross2d(edge_vec, ap)) / edge_len;
@@ -1299,6 +1498,448 @@ bool fitCircleLeastSquares(const std::vector<cv::Point> &pts,
   return true;
 }
 
+bool fitCircleRobust(const std::vector<cv::Point> &pts, cv::Point2f *center,
+                     float *radius, float *mean_abs_error,
+                     float *inlier_ratio) {
+  if (pts.size() < 8 || center == nullptr || radius == nullptr) {
+    return false;
+  }
+
+  std::vector<cv::Point> working = pts;
+  cv::Point2f c;
+  float r = 0.0f;
+
+  for (int iter = 0; iter < 3; ++iter) {
+    if (!fitCircleLeastSquares(working, &c, &r) || r <= 0.0f) {
+      return false;
+    }
+
+    std::vector<cv::Point> inliers;
+    inliers.reserve(working.size());
+    const float residual_tol = std::max(2.0f, r * 0.10f);
+    for (const cv::Point &p : pts) {
+      const float d =
+          static_cast<float>(cv::norm(cv::Point2f(static_cast<float>(p.x),
+                                                  static_cast<float>(p.y)) -
+                                      c));
+      if (std::fabs(d - r) <= residual_tol) {
+        inliers.push_back(p);
+      }
+    }
+
+    if (inliers.size() < 8U ||
+        inliers.size() < static_cast<size_t>(pts.size() * 0.52f)) {
+      break;
+    }
+    if (inliers.size() == working.size()) {
+      working = inliers;
+      break;
+    }
+    working = inliers;
+  }
+
+  if (!fitCircleLeastSquares(working, &c, &r) || r <= 0.0f) {
+    return false;
+  }
+
+  double err_sum = 0.0;
+  int inliers = 0;
+  const float residual_tol = std::max(2.0f, r * 0.12f);
+  for (const cv::Point &p : pts) {
+    const float d =
+        static_cast<float>(cv::norm(cv::Point2f(static_cast<float>(p.x),
+                                                static_cast<float>(p.y)) -
+                                    c));
+    const float err = std::fabs(d - r);
+    err_sum += err;
+    if (err <= residual_tol) {
+      ++inliers;
+    }
+  }
+
+  const float mean_err =
+      static_cast<float>(err_sum / static_cast<double>(pts.size()));
+  const float ratio =
+      static_cast<float>(inliers) / static_cast<float>(std::max<size_t>(1U, pts.size()));
+  if (mean_err > std::max(2.2f, r * 0.075f) || ratio < 0.58f) {
+    return false;
+  }
+
+  *center = c;
+  *radius = r;
+  if (mean_abs_error != nullptr) {
+    *mean_abs_error = mean_err;
+  }
+  if (inlier_ratio != nullptr) {
+    *inlier_ratio = ratio;
+  }
+  return true;
+}
+
+bool compatibleArcModels(const EdgeArcInfo &a, const EdgeArcInfo &b) {
+  if (!a.is_arc || !b.is_arc || a.radius_px <= 0.0f || b.radius_px <= 0.0f) {
+    return false;
+  }
+  const float avg_radius = (a.radius_px + b.radius_px) * 0.5f;
+  const float center_dist = static_cast<float>(cv::norm(a.center - b.center));
+  const float radius_diff = std::fabs(a.radius_px - b.radius_px);
+  return center_dist <= std::max(4.0f, avg_radius * 0.18f) &&
+         radius_diff <= std::max(3.0f, avg_radius * 0.12f);
+}
+
+bool buildArcInfoFromCircle(const std::vector<cv::Point2f> &polygon,
+                            const std::vector<cv::Point> &contour,
+                            size_t edge_index, const cv::Point2f &center,
+                            float radius, EdgeArcInfo *out) {
+  if (out == nullptr || polygon.size() < 3 || radius <= 1.0f) {
+    return false;
+  }
+
+  const size_t n = polygon.size();
+  const cv::Point2f &pa = polygon[edge_index];
+  const cv::Point2f &pb = polygon[(edge_index + 1U) % n];
+  const float edge_len = static_cast<float>(cv::norm(pb - pa));
+  if (edge_len < 3.0f || edge_len > radius * 1.65f) {
+    return false;
+  }
+
+  const float endpoint_tol = std::max(2.0f, radius * 0.10f);
+  const float da = std::fabs(static_cast<float>(cv::norm(pa - center)) - radius);
+  const float db = std::fabs(static_cast<float>(cv::norm(pb - center)) - radius);
+  if (da > endpoint_tol || db > endpoint_tol) {
+    return false;
+  }
+
+  const size_t idx_a = nearestContourIdx(contour, pa);
+  const size_t idx_b = nearestContourIdx(contour, pb);
+  std::vector<cv::Point> seg = extractContourSegment(contour, idx_a, idx_b);
+  if (seg.size() < 3U) {
+    return false;
+  }
+
+  double err_sum = 0.0;
+  float max_err = 0.0f;
+  for (const cv::Point &cp : seg) {
+    const cv::Point2f p(static_cast<float>(cp.x), static_cast<float>(cp.y));
+    const float err = std::fabs(static_cast<float>(cv::norm(p - center)) - radius);
+    err_sum += static_cast<double>(err);
+    max_err = std::max(max_err, err);
+  }
+  const float mean_err =
+      static_cast<float>(err_sum / static_cast<double>(seg.size()));
+  if (mean_err > std::max(1.4f, radius * 0.045f) ||
+      max_err > std::max(2.6f, radius * 0.09f)) {
+    return false;
+  }
+
+  const cv::Point2f va = pa - center;
+  const cv::Point2f vb = pb - center;
+  const float va_len = static_cast<float>(cv::norm(va));
+  const float vb_len = static_cast<float>(cv::norm(vb));
+  if (va_len < 1.0f || vb_len < 1.0f) {
+    return false;
+  }
+  const float arc_angle_deg =
+      std::acos(clampUnit((va.x * vb.x + va.y * vb.y) / (va_len * vb_len))) *
+      180.0f / static_cast<float>(CV_PI);
+  if (arc_angle_deg < 5.0f || arc_angle_deg > 175.0f) {
+    return false;
+  }
+
+  float sa_deg = normalizeAngle360(
+      std::atan2(pa.y - center.y, pa.x - center.x) * 180.0f /
+      static_cast<float>(CV_PI));
+  float ea_deg = normalizeAngle360(
+      std::atan2(pb.y - center.y, pb.x - center.x) * 180.0f /
+      static_cast<float>(CV_PI));
+  const cv::Point &mid_pt = seg[seg.size() / 2U];
+  const float mid_deg = normalizeAngle360(
+      std::atan2(static_cast<float>(mid_pt.y) - center.y,
+                 static_cast<float>(mid_pt.x) - center.x) *
+      180.0f / static_cast<float>(CV_PI));
+
+  auto angleBetween = [](float start, float end, float test) -> bool {
+    if (start <= end) {
+      return test >= start && test <= end;
+    }
+    return test >= start || test <= end;
+  };
+  if (!angleBetween(sa_deg, ea_deg, mid_deg)) {
+    std::swap(sa_deg, ea_deg);
+  }
+
+  out->is_arc = true;
+  out->center = center;
+  out->radius_px = radius;
+  out->arc_start_deg = sa_deg;
+  out->arc_end_deg = ea_deg;
+  out->arc_points = seg;
+  return true;
+}
+
+void bridgeShortArcGaps(const std::vector<cv::Point2f> &polygon,
+                        const std::vector<cv::Point> &contour,
+                        std::vector<EdgeArcInfo> *arcs) {
+  if (arcs == nullptr || polygon.size() < 3 || arcs->size() != polygon.size()) {
+    return;
+  }
+
+  const size_t n = polygon.size();
+  for (int pass = 0; pass < 3; ++pass) {
+    bool changed = false;
+    for (size_t i = 0; i < n; ++i) {
+      if ((*arcs)[i].is_arc) {
+        continue;
+      }
+
+      const size_t prev = (i + n - 1U) % n;
+      const size_t next = (i + 1U) % n;
+      cv::Point2f ref_center;
+      float ref_radius = 0.0f;
+      bool has_ref = false;
+
+      if ((*arcs)[prev].is_arc && (*arcs)[next].is_arc &&
+          compatibleArcModels((*arcs)[prev], (*arcs)[next])) {
+        ref_center = ((*arcs)[prev].center + (*arcs)[next].center) * 0.5f;
+        ref_radius = ((*arcs)[prev].radius_px + (*arcs)[next].radius_px) * 0.5f;
+        has_ref = true;
+      } else if ((*arcs)[prev].is_arc) {
+        ref_center = (*arcs)[prev].center;
+        ref_radius = (*arcs)[prev].radius_px;
+        has_ref = true;
+      } else if ((*arcs)[next].is_arc) {
+        ref_center = (*arcs)[next].center;
+        ref_radius = (*arcs)[next].radius_px;
+        has_ref = true;
+      }
+
+      if (!has_ref || ref_radius <= 1.0f) {
+        continue;
+      }
+
+      EdgeArcInfo bridged;
+      if (buildArcInfoFromCircle(polygon, contour, i, ref_center, ref_radius,
+                                 &bridged)) {
+        (*arcs)[i] = bridged;
+        changed = true;
+      }
+    }
+    if (!changed) {
+      break;
+    }
+  }
+}
+
+float clockwiseArcSpanDeg(float start, float end) {
+  float span = normalizeAngle360(end - start);
+  if (span <= 0.0f) {
+    span += 360.0f;
+  }
+  return span;
+}
+
+float smallerArcSpanDeg(float a, float b) {
+  const float cw = clockwiseArcSpanDeg(a, b);
+  return std::min(cw, 360.0f - cw);
+}
+
+float vertexInteriorAngleDeg(const cv::Point2f &prev, const cv::Point2f &curr,
+                             const cv::Point2f &next) {
+  const cv::Point2f v1 = prev - curr;
+  const cv::Point2f v2 = next - curr;
+  const float n1 = static_cast<float>(cv::norm(v1));
+  const float n2 = static_cast<float>(cv::norm(v2));
+  if (n1 < 1e-3f || n2 < 1e-3f) {
+    return 180.0f;
+  }
+  return std::acos(clampUnit((v1.x * v2.x + v1.y * v2.y) / (n1 * n2))) *
+         180.0f / static_cast<float>(CV_PI);
+}
+
+bool buildArcRunFromPolygon(const std::vector<cv::Point2f> &polygon,
+                            const std::vector<cv::Point> &contour,
+                            size_t start_edge, size_t edge_count,
+                            float mm_per_px,
+                            EdgeArcInfo *out) {
+  if (out == nullptr || polygon.size() < 3 || edge_count < 2 ||
+      edge_count >= polygon.size()) {
+    return false;
+  }
+
+  const size_t n = polygon.size();
+  const size_t end_vertex = (start_edge + edge_count) % n;
+  const cv::Point2f &pa = polygon[start_edge];
+  const cv::Point2f &pb = polygon[end_vertex];
+  const size_t idx_a = nearestContourIdx(contour, pa);
+  const size_t idx_b = nearestContourIdx(contour, pb);
+  std::vector<cv::Point> seg = extractContourSegment(contour, idx_a, idx_b);
+  if (seg.size() < 12U) {
+    return false;
+  }
+
+  cv::Point2f center;
+  float radius = 0.0f;
+  float fit_error = 0.0f;
+  float inlier_ratio = 0.0f;
+  if (!fitCircleRobust(seg, &center, &radius, &fit_error, &inlier_ratio)) {
+    return false;
+  }
+  if (radius * mm_per_px > kMaxExternalArcRadiusMm) {
+    return false;
+  }
+
+  float chord_sum = 0.0f;
+  float max_edge = 0.0f;
+  float min_edge = std::numeric_limits<float>::max();
+  float vertex_err_sum = 0.0f;
+  float max_vertex_err = 0.0f;
+  int positive_turns = 0;
+  int negative_turns = 0;
+  for (size_t k = 0; k <= edge_count; ++k) {
+    const cv::Point2f &v = polygon[(start_edge + k) % n];
+    const float err = std::fabs(static_cast<float>(cv::norm(v - center)) - radius);
+    vertex_err_sum += err;
+    max_vertex_err = std::max(max_vertex_err, err);
+    if (k < edge_count) {
+      const cv::Point2f &next = polygon[(start_edge + k + 1U) % n];
+      const float edge_len = static_cast<float>(cv::norm(next - v));
+      chord_sum += edge_len;
+      max_edge = std::max(max_edge, edge_len);
+      min_edge = std::min(min_edge, edge_len);
+    }
+    if (k > 0U && k < edge_count) {
+      const cv::Point2f &prev = polygon[(start_edge + k - 1U) % n];
+      const cv::Point2f &next = polygon[(start_edge + k + 1U) % n];
+      const float angle = vertexInteriorAngleDeg(prev, v, next);
+      if (angle < 118.0f) {
+        return false;
+      }
+      const float turn = cross2d(v - prev, next - v);
+      if (turn > 1e-3f) {
+        ++positive_turns;
+      } else if (turn < -1e-3f) {
+        ++negative_turns;
+      }
+    }
+  }
+
+  if (positive_turns > 0 && negative_turns > 0) {
+    return false;
+  }
+
+  const float mean_vertex_err =
+      vertex_err_sum / static_cast<float>(edge_count + 1U);
+  if (mean_vertex_err > std::max(1.8f, radius * 0.055f) ||
+      max_vertex_err > std::max(3.0f, radius * 0.11f)) {
+    return false;
+  }
+  if (fit_error > std::max(1.8f, radius * 0.055f) || inlier_ratio < 0.62f) {
+    return false;
+  }
+
+  const float start_ang = normalizeAngle360(
+      std::atan2(pa.y - center.y, pa.x - center.x) * 180.0f /
+      static_cast<float>(CV_PI));
+  const float end_ang = normalizeAngle360(
+      std::atan2(pb.y - center.y, pb.x - center.x) * 180.0f /
+      static_cast<float>(CV_PI));
+  float span = smallerArcSpanDeg(start_ang, end_ang);
+  if (span < 35.0f || span > 235.0f) {
+    return false;
+  }
+
+  const float expected_arc_len =
+      radius * span * static_cast<float>(CV_PI) / 180.0f;
+  if (expected_arc_len <= 1.0f || chord_sum <= 1.0f) {
+    return false;
+  }
+  const float length_ratio = chord_sum / expected_arc_len;
+  if (length_ratio < 0.82f || length_ratio > 1.18f) {
+    return false;
+  }
+
+  // Runs de arco são justamente cordas curtas consecutivas. Se uma aresta domina,
+  // provavelmente é canto/chamfro, não raio contínuo.
+  if (max_edge > chord_sum * 0.72f) {
+    return false;
+  }
+  if (min_edge <= 1.0f || max_edge > min_edge * 1.55f) {
+    return false;
+  }
+
+  const float mean_edge = chord_sum / static_cast<float>(edge_count);
+  double edge_variance = 0.0;
+  for (size_t k = 0; k < edge_count; ++k) {
+    const cv::Point2f &v = polygon[(start_edge + k) % n];
+    const cv::Point2f &next = polygon[(start_edge + k + 1U) % n];
+    const float edge_len = static_cast<float>(cv::norm(next - v));
+    const float diff = edge_len - mean_edge;
+    edge_variance += static_cast<double>(diff * diff);
+  }
+  const float edge_cv =
+      std::sqrt(edge_variance / static_cast<double>(edge_count)) /
+      std::max(1.0f, mean_edge);
+  if (edge_cv > 0.23f) {
+    return false;
+  }
+
+  EdgeArcInfo info;
+  if (!buildArcInfoFromCircle(polygon, contour, start_edge, center, radius, &info)) {
+    return false;
+  }
+
+  // Corrige o fim do arco para cobrir o run inteiro, não só a primeira corda.
+  info.arc_end_deg = end_ang;
+  info.arc_points = seg;
+  *out = info;
+  return true;
+}
+
+void detectArcRunsFromPolygon(const std::vector<cv::Point2f> &polygon,
+                              const std::vector<cv::Point> &contour,
+                              float mm_per_px,
+                              std::vector<EdgeArcInfo> *arcs) {
+  if (arcs == nullptr || arcs->size() != polygon.size() || polygon.size() < 5) {
+    return;
+  }
+
+  const size_t n = polygon.size();
+  const size_t max_run = std::min<size_t>(8U, n - 1U);
+  for (size_t run = max_run; run >= 2U; --run) {
+    for (size_t start = 0; start < n; ++start) {
+      bool already_arc = true;
+      for (size_t k = 0; k < run; ++k) {
+        if (!(*arcs)[(start + k) % n].is_arc) {
+          already_arc = false;
+          break;
+        }
+      }
+      if (already_arc) {
+        continue;
+      }
+
+      EdgeArcInfo run_arc;
+      if (!buildArcRunFromPolygon(polygon, contour, start, run, mm_per_px,
+                                  &run_arc)) {
+        continue;
+      }
+
+      for (size_t k = 0; k < run; ++k) {
+        EdgeArcInfo edge_arc;
+        if (buildArcInfoFromCircle(polygon, contour, (start + k) % n,
+                                   run_arc.center, run_arc.radius_px,
+                                   &edge_arc)) {
+          (*arcs)[(start + k) % n] = edge_arc;
+        }
+      }
+    }
+
+    if (run == 2U) {
+      break;
+    }
+  }
+}
+
 // Analisa cada aresta do polígono para detectar se é reta ou curvada
 std::vector<EdgeArcInfo> detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
                                         const std::vector<cv::Point> &contour,
@@ -1308,12 +1949,12 @@ std::vector<EdgeArcInfo> detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
   if (np < 3 || contour.size() < 30) {
     return arcs;
   }
-    const float mm_per_px = effectiveMmPerPx(scale);
+  const float mm_per_px = effectiveMmPerPx(scale);
   if (mm_per_px <= 0.0f) {
     return arcs;
   }
-  const float min_dev_mm = 1.5f;
-  const float min_dev_px = std::max(5.0f, min_dev_mm / mm_per_px);
+  const float min_dev_mm = 0.9f;
+  const float min_dev_px = std::max(3.0f, min_dev_mm / mm_per_px);
 
   for (size_t i = 0; i < np; ++i) {
     const cv::Point2f &pa = polygon[i];
@@ -1347,16 +1988,20 @@ std::vector<EdgeArcInfo> detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
       }
     }
 
-    // Se desvio > 6% do comprimento e > min_dev_px absolutos → é curva
+    // Desvio suficiente para curva real, mas sem exigir tanto que arcos
+    // fechados/curtos sejam quebrados em segmentos retos.
     const float dev_ratio = max_dev / edge_len;
-    if (dev_ratio < 0.06f || max_dev < min_dev_px) {
+    if (dev_ratio < 0.04f || max_dev < min_dev_px) {
       continue;
     }
 
     // Ajustar círculo aos pontos
     cv::Point2f circ_center;
     float circ_radius = 0.0f;
-    if (!fitCircleLeastSquares(seg, &circ_center, &circ_radius)) {
+    float fit_error = 0.0f;
+    float inlier_ratio = 0.0f;
+    if (!fitCircleRobust(seg, &circ_center, &circ_radius, &fit_error,
+                         &inlier_ratio)) {
       continue;
     }
 
@@ -1364,6 +2009,13 @@ std::vector<EdgeArcInfo> detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
     // aresta) nem minúsculo (<45% do comprimento, semicírculo quase perfeito é
     // 50%)
     if (circ_radius > edge_len * 3.0f || circ_radius < edge_len * 0.35f) {
+      continue;
+    }
+    if (radiusMm(circ_radius, scale) > kMaxExternalArcRadiusMm) {
+      continue;
+    }
+    if (fit_error > std::max(2.0f, circ_radius * 0.06f) ||
+        inlier_ratio < 0.64f) {
       continue;
     }
 
@@ -1398,18 +2050,9 @@ std::vector<EdgeArcInfo> detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
                    static_cast<float>(mid_pt.x) - circ_center.x) *
         180.0f / static_cast<float>(CV_PI);
 
-    // Normalizar para [0, 360)
-    auto normAngle = [](float a) -> float {
-      while (a < 0.0f)
-        a += 360.0f;
-      while (a >= 360.0f)
-        a -= 360.0f;
-      return a;
-    };
-
-    sa_deg = normAngle(sa_deg);
-    ea_deg = normAngle(ea_deg);
-    float mid_deg = normAngle(mid_ang);
+    sa_deg = normalizeAngle360(sa_deg);
+    ea_deg = normalizeAngle360(ea_deg);
+    float mid_deg = normalizeAngle360(mid_ang);
 
     // Verificar se mid_deg está entre sa_deg→ea_deg no sentido horário
     auto angleBetween = [](float start, float end, float test) -> bool {
@@ -1433,6 +2076,10 @@ std::vector<EdgeArcInfo> detectEdgeArcs(const std::vector<cv::Point2f> &polygon,
     info.arc_points = seg;
     arcs[i] = info;
   }
+
+  bridgeShortArcGaps(polygon, contour, &arcs);
+  detectArcRunsFromPolygon(polygon, contour, mm_per_px, &arcs);
+  bridgeShortArcGaps(polygon, contour, &arcs);
 
   return arcs;
 }
@@ -1542,12 +2189,8 @@ detectSlots(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   }
 
   cv::Mat piece_mask = cv::Mat::zeros(roi_gray.size(), CV_8U);
-  std::vector<cv::Point> hull_local;
   if (!outer_local.empty()) {
-    cv::convexHull(outer_local, hull_local);
-    const std::vector<std::vector<cv::Point>> piece_contours = {hull_local};
-    cv::drawContours(piece_mask, piece_contours, -1, cv::Scalar(255),
-                     cv::FILLED);
+    drawFilledContourMask(outer_local, &piece_mask);
   }
 
   // Detectar cavidades internas — adaptiveThreshold
@@ -1607,14 +2250,7 @@ detectSlots(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
         static_cast<float>((m.m10 / m.m00) + roi_rect.x),
         static_cast<float>((m.m01 / m.m00) + roi_rect.y));
 
-    std::vector<cv::Point> global_hull;
-    if (!hull_local.empty()) {
-      global_hull.reserve(hull_local.size());
-      for (const cv::Point &p : hull_local) {
-        global_hull.emplace_back(p.x + roi_rect.x, p.y + roi_rect.y);
-      }
-    }
-    if (cv::pointPolygonTest(global_hull, slot_center, false) < 0.0) {
+    if (distanceToContour(outer_contour, slot_center) <= 1.0f) {
       continue;
     }
 
@@ -2036,27 +2672,33 @@ MeasurementResult process_image(const char *input_path,
     std::vector<cv::Point2f> polygon =
         simplifyPolygonForTechnicalDrawing(polygon_refined, mm_per_px, is_gallery);
 
-    // Refinamento Sub-pixel final para precisão EXTREMA
+    // Refinamento subpixel final: cornerSubPix trabalha em coordenadas da ROI.
     if (polygon.size() >= 3 && !roi_gray.empty()) {
-        try {
-            cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 40, 0.001);
-            cv::Size winSize(5, 5);
-            cv::Size zeroZone(-1, -1);
-            
-            // Converter pontos globais para coordenadas da ROI se necessário, 
-            // mas aqui trabalhamos na flat_image/roi_gray
-            std::vector<cv::Point2f> corners = polygon;
-            cv::cornerSubPix(roi_gray, corners, winSize, zeroZone, criteria);
-            
-            // Verificar se os pontos não fugiram muito da posição original (segurança)
-            for(size_t i=0; i<polygon.size(); ++i) {
-                if(cv::norm(corners[i] - polygon[i]) < 3.0) {
-                    polygon[i] = corners[i];
-                }
-            }
-        } catch(...) {
-            // Se falhar (ex: ROI muito pequena), mantém o polígono original
+      try {
+        cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT,
+                                  40, 0.001);
+        cv::Size winSize(5, 5);
+        cv::Size zeroZone(-1, -1);
+
+        std::vector<cv::Point2f> corners;
+        corners.reserve(polygon.size());
+        for (const cv::Point2f &p : polygon) {
+          corners.emplace_back(p.x - static_cast<float>(roi_rect.x),
+                               p.y - static_cast<float>(roi_rect.y));
         }
+        cv::cornerSubPix(roi_gray, corners, winSize, zeroZone, criteria);
+
+        for (size_t i = 0; i < polygon.size(); ++i) {
+          const cv::Point2f refined(
+              corners[i].x + static_cast<float>(roi_rect.x),
+              corners[i].y + static_cast<float>(roi_rect.y));
+          if (cv::norm(refined - polygon[i]) < 3.0) {
+            polygon[i] = refined;
+          }
+        }
+      } catch (...) {
+        // Se falhar (ex: ROI muito pequena), mantém o polígono original
+      }
     }
 
     std::vector<float> polygon_edges_mm;
