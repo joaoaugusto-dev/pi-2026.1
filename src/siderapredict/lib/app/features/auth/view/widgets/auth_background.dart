@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:siderapredict/app/core/theme/theme.dart';
+import 'package:siderapredict/app/core/theme/app_theme.dart';
 
 class AuthBackground extends StatelessWidget {
   final Widget child;
@@ -15,10 +15,7 @@ class AuthBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            primaryColor,
-            paletteRed,
-          ],
+          colors: [primaryColor, paletteRed],
         ),
       ),
       child: Stack(

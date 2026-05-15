@@ -1,53 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:validatorless/validatorless.dart';
 
-import 'package:siderapredict/app/core/theme/theme.dart';
-import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
-import 'package:siderapredict/app/routes/app_routes.dart';
+import 'package:siderapredict/app/core/theme/app_theme.dart';
 import 'package:siderapredict/app/features/auth/view/widgets/auth_background.dart';
-import 'package:siderapredict/app/features/auth/view/widgets/premium_text_field.dart';
+import 'package:siderapredict/app/features/auth/view/widgets/auth_text_field.dart';
+import 'package:siderapredict/app/features/auth/view/widgets/auth_success_overlay.dart';
+import 'package:siderapredict/app/features/auth/viewmodel/login_view_model.dart';
 
-import 'package:siderapredict/app/core/utils/premium_alerts.dart';
-
-import 'package:siderapredict/app/features/auth/view/widgets/success_overlay.dart';
-
-class LoginPage extends StatefulWidget {
+class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _identifierEC = TextEditingController();
-  final _passwordEC = TextEditingController();
-  bool _showSuccess = false;
-
-  @override
-  void dispose() {
-    _identifierEC.dispose();
-    _passwordEC.dispose();
-    super.dispose();
-  }
-
-  void _login() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      final viewModel = context.read<AuthViewModel>();
-      final success = await viewModel.login(_identifierEC.text, _passwordEC.text);
-
-      if (success && mounted) {
-        setState(() => _showSuccess = true);
-      } else if (mounted && viewModel.errorMessage != null) {
-        PremiumAlerts.showError(context, viewModel.errorMessage!);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<AuthViewModel>();
+    final viewModel = context.watch<LoginViewModel>();
 
     return Scaffold(
       body: Stack(
@@ -57,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: Form(
-                  key: _formKey,
+                  key: viewModel.formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -77,29 +42,23 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 48),
 
-                      PremiumTextField(
-                        controller: _identifierEC,
+                      AuthTextField(
+                        controller: viewModel.identifierController,
                         labelText: 'E-mail ou Matrícula',
                         prefixIcon: Icons.person_outline,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        validator: Validatorless.multiple([
-                          Validatorless.required('Campo obrigatório'),
-                          Validatorless.min(3, 'Identificador muito curto'),
-                        ]),
+                        validator: viewModel.identifierValidator,
                       ),
                       const SizedBox(height: 16),
-                      PremiumTextField(
-                        controller: _passwordEC,
+                      AuthTextField(
+                        controller: viewModel.passwordController,
                         labelText: 'Senha',
                         prefixIcon: Icons.lock_outline,
                         obscureText: true,
                         textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _login(),
-                        validator: Validatorless.multiple([
-                          Validatorless.required('Senha obrigatória'),
-                          Validatorless.min(8, 'Mínimo de 8 caracteres'),
-                        ]),
+                        onSubmitted: viewModel.loginSubmittedAction(context),
+                        validator: viewModel.passwordValidator,
                       ),
                       const SizedBox(height: 32),
                       SizedBox(
@@ -112,7 +71,9 @@ class _LoginPageState extends State<LoginPage> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          onPressed: viewModel.isLoading || _showSuccess ? null : _login,
+                          onPressed: viewModel.isLoginDisabled
+                              ? null
+                              : viewModel.loginAction(context),
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: viewModel.isLoading
@@ -137,17 +98,16 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 24),
                       TextButton(
-                        onPressed: () {
-                          viewModel.clearError();
-                          viewModel.setSignupStep(0);
-                          Navigator.of(context).pushNamed(AppRoutes.signup);
-                        },
+                        onPressed: viewModel.signupAction(context),
                         style: TextButton.styleFrom(
                           foregroundColor: whiteColor,
                         ),
                         child: const Text(
                           'Não tem uma conta? Cadastre-se',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ],
@@ -156,11 +116,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          SuccessOverlay(
-            visible: _showSuccess,
-            onComplete: () {
-              Navigator.of(context).pushReplacementNamed(AppRoutes.menuPrincipal);
-            },
+          AuthSuccessOverlay(
+            visible: viewModel.showSuccess,
+            onComplete: viewModel.successCompleteAction(context),
           ),
         ],
       ),

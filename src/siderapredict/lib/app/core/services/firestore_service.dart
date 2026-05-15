@@ -8,9 +8,11 @@ class FirestoreService {
   final FirebaseFirestore _firestore;
   final String collectionName;
 
-  CollectionReference<MeasurementRecord> get _collection =>
-      _firestore.collection(collectionName).withConverter<MeasurementRecord>(
-        fromFirestore: (snapshot, _) => MeasurementRecord.fromJson(snapshot.data()!),
+  CollectionReference<MeasurementRecord> get _collection => _firestore
+      .collection(collectionName)
+      .withConverter<MeasurementRecord>(
+        fromFirestore: (snapshot, _) =>
+            MeasurementRecord.fromJson(snapshot.data()!),
         toFirestore: (record, _) => record.toJson(),
       );
 
@@ -19,7 +21,9 @@ class FirestoreService {
   }
 
   Future<List<MeasurementRecord>> fetchRecords() async {
-    final querySnapshot = await _collection.orderBy('createdAt', descending: true).get();
+    final querySnapshot = await _collection
+        .orderBy('createdAt', descending: true)
+        .get();
     return querySnapshot.docs.map((doc) => doc.data()).toList();
   }
 

@@ -50,9 +50,7 @@ class AuthService {
         final uid = userCredential.user!.uid;
 
         // 1. Save full profile (Protected) - Only name now as email is in its own index
-        await _firestore.collection('users').doc(uid).set({
-          'nome': nome,
-        });
+        await _firestore.collection('users').doc(uid).set({'nome': nome});
 
         // 2. Save public index for login by Matricula
         await _firestore.collection('matriculas').doc(matricula).set({
@@ -61,9 +59,10 @@ class AuthService {
         });
 
         // 3. Save public index for Email existence check
-        await _firestore.collection('emails').doc(email.trim().toLowerCase()).set({
-          'uid': uid,
-        });
+        await _firestore
+            .collection('emails')
+            .doc(email.trim().toLowerCase())
+            .set({'uid': uid});
       }
 
       return userCredential;
@@ -78,13 +77,19 @@ class AuthService {
   }
 
   Future<bool> isMatriculaAvailable(String matricula) async {
-    final doc = await _firestore.collection('matriculas').doc(matricula.trim()).get();
+    final doc = await _firestore
+        .collection('matriculas')
+        .doc(matricula.trim())
+        .get();
     return !doc.exists;
   }
 
   Future<bool> isEmailAvailable(String email) async {
     // Agora buscamos na coleção 'emails' simplificada
-    final doc = await _firestore.collection('emails').doc(email.trim().toLowerCase()).get();
+    final doc = await _firestore
+        .collection('emails')
+        .doc(email.trim().toLowerCase())
+        .get();
     return !doc.exists;
   }
 

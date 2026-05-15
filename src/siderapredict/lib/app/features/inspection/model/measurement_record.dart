@@ -1,7 +1,20 @@
 import 'dart:convert';
 
-enum PieceSegmentType { edge, semicircle, hole, overallWidth, overallHeight, angle, slot, chamfer, diameter, spacing }
+enum PieceSegmentType {
+  edge,
+  semicircle,
+  hole,
+  overallWidth,
+  overallHeight,
+  angle,
+  slot,
+  chamfer,
+  diameter,
+  spacing,
+}
+
 enum MeasurementSource { camera }
+
 enum AiReportStatus { pending, generating, completed, failed }
 
 extension AiReportStatusStorage on AiReportStatus {

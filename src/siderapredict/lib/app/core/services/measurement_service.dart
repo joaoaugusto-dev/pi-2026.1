@@ -1,12 +1,13 @@
 import 'dart:async';
 
-import 'package:siderapredict/app/core/cv_bridge.dart';
+import 'package:siderapredict/app/core/native_vision_bridge.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 
 class MeasurementService {
-  MeasurementService({CvBridge? bridge}) : _bridge = bridge ?? CvBridge();
+  MeasurementService({NativeVisionBridge? bridge})
+    : _bridge = bridge ?? NativeVisionBridge();
 
-  final CvBridge _bridge;
+  final NativeVisionBridge _bridge;
 
   Future<MeasurementDraft> processImage(String imagePath) async {
     final payload = await _bridge
@@ -21,7 +22,9 @@ class MeasurementService {
         );
 
     final edges = _toDoubleList(payload['edgesMm']);
-    final semicircles = _toDoubleList(payload['semiCircleRadiiMm'] ?? payload['semicircleRadiiMm']);
+    final semicircles = _toDoubleList(
+      payload['semiCircleRadiiMm'] ?? payload['semicircleRadiiMm'],
+    );
     final holes = _toDoubleList(payload['holeRadiiMm']);
     final angles = _toDoubleList(payload['anglesDeg']);
     final holeDiameters = _toDoubleList(payload['holeDiametersMm']);
@@ -94,14 +97,13 @@ class MeasurementService {
           isAngle: true,
         ),
       // Edges
-      ...edges
-          .asMap()
-          .entries
-          .map((entry) => PieceSegmentMeasurement(
-                type: PieceSegmentType.edge,
-                label: 'Aresta ${entry.key + 1}',
-                valueMm: entry.value,
-              )),
+      ...edges.asMap().entries.map(
+        (entry) => PieceSegmentMeasurement(
+          type: PieceSegmentType.edge,
+          label: 'Aresta ${entry.key + 1}',
+          valueMm: entry.value,
+        ),
+      ),
     ];
 
     return MeasurementDraft(

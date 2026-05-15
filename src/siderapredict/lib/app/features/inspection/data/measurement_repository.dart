@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-
 import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
@@ -19,17 +18,18 @@ class MeasurementRepository {
     required FirestoreService firestoreService,
     required OllamaReportService ollamaService,
     required ReportExportService exportService,
-  })  : _localStore = localStore,
-        _firestoreService = firestoreService,
-        _ollamaService = ollamaService,
-        _exportService = exportService;
+  }) : _localStore = localStore,
+       _firestoreService = firestoreService,
+       _ollamaService = ollamaService,
+       _exportService = exportService;
 
   final LocalHistoryStore _localStore;
   final FirestoreService _firestoreService;
   final OllamaReportService _ollamaService;
   final ReportExportService _exportService;
 
-  final _recordUpdatesController = StreamController<MeasurementRecord>.broadcast();
+  final _recordUpdatesController =
+      StreamController<MeasurementRecord>.broadcast();
 
   final Set<String> _activeReportJobs = <String>{};
   final Map<String, int> _reportRetryAttempts = <String, int>{};
@@ -37,9 +37,11 @@ class MeasurementRepository {
 
   Completer<void>? _aiProcessingLock;
 
-  Stream<MeasurementRecord> get recordUpdates => _recordUpdatesController.stream;
+  Stream<MeasurementRecord> get recordUpdates =>
+      _recordUpdatesController.stream;
 
-  Stream<List<MeasurementRecord>> get allRecords => _firestoreService.streamRecords();
+  Stream<List<MeasurementRecord>> get allRecords =>
+      _firestoreService.streamRecords();
 
   Future<MeasurementRecord> saveMeasurement({
     required MeasurementDraft draft,
@@ -51,26 +53,33 @@ class MeasurementRepository {
   }) async {
     final now = DateTime.now();
 
-    final pieceNumber = draft.pieceNumberOfDay ?? await _nextPieceNumberOfDay(now);
+    final pieceNumber =
+        draft.pieceNumberOfDay ?? await _nextPieceNumberOfDay(now);
     final persistedDraft = draft.copyWith(pieceNumberOfDay: pieceNumber);
 
-    final imagePath = draft.processedImagePath.isNotEmpty 
-        ? draft.processedImagePath 
+    final imagePath = draft.processedImagePath.isNotEmpty
+        ? draft.processedImagePath
         : draft.sourceImagePath;
 
-    final historyImage = await compute(_optimizeImageTask, _OptimizeImageParams(
-      imagePath: imagePath,
-      maxWidth: 1000,
-      jpegQuality: 70,
-      maxBase64Length: 600000,
-    ));
-    
-    final thumbnailImage = await compute(_optimizeImageTask, _OptimizeImageParams(
-      imagePath: imagePath,
-      maxWidth: 300,
-      jpegQuality: 60,
-      maxBase64Length: 50000,
-    ));
+    final historyImage = await compute(
+      _optimizeImageTask,
+      _OptimizeImageParams(
+        imagePath: imagePath,
+        maxWidth: 1000,
+        jpegQuality: 70,
+        maxBase64Length: 600000,
+      ),
+    );
+
+    final thumbnailImage = await compute(
+      _optimizeImageTask,
+      _OptimizeImageParams(
+        imagePath: imagePath,
+        maxWidth: 300,
+        jpegQuality: 60,
+        maxBase64Length: 50000,
+      ),
+    );
 
     final record = MeasurementRecord(
       id: const Uuid().v4(),
@@ -98,10 +107,10 @@ class MeasurementRepository {
 
   Future<List<MeasurementRecord>> loadHistory() async {
     final jsonRecords = await _localStore.loadAll();
-    
+
     try {
       final firestoreRecords = await _firestoreService.fetchRecords();
-      
+
       final Map<String, MeasurementRecord> merged = {
         for (final r in jsonRecords) r.id: r,
         for (final r in firestoreRecords) r.id: r,
@@ -110,13 +119,15 @@ class MeasurementRepository {
       final recordsList = merged.values.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      final localOnly = jsonRecords.where((lr) => !firestoreRecords.any((fr) => fr.id == lr.id));
+      final localOnly = jsonRecords.where(
+        (lr) => !firestoreRecords.any((fr) => fr.id == lr.id),
+      );
       for (final r in localOnly) {
         unawaited(_firestoreService.saveRecord(r).catchError((_) {}));
       }
 
       await _localStore.saveAll(recordsList);
-      
+
       final normalized = await _normalizeQueuedStatuses(recordsList);
       _resumeQueuedAiReports(normalized);
       return normalized;
@@ -176,7 +187,7 @@ class MeasurementRepository {
 
     _aiProcessingLock = Completer<void>();
     debugPrint('Iniciando Job IA para ${record.id}');
-    
+
     try {
       _reportRetryTimers.remove(record.id)?.cancel();
       _activeReportJobs.add(record.id);
@@ -354,7 +365,6 @@ class MeasurementRepository {
 
     return countForDay + 1;
   }
-
 }
 
 class _OptimizeImageParams {
@@ -388,7 +398,7 @@ Future<String?> _optimizeImageTask(_OptimizeImageParams params) async {
     final resized = decoded.width > params.maxWidth
         ? img.copyResize(decoded, width: params.maxWidth)
         : decoded;
-    
+
     final encoded = img.encodeJpg(resized, quality: params.jpegQuality);
     final base64 = base64Encode(encoded);
 

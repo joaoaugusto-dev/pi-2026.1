@@ -11,7 +11,7 @@
 
 namespace {
 
-constexpr float kMarkerSquareMm = 11.0f;
+constexpr float kMarkerSquareMm = 10.0f;
 constexpr float kWarpUpscale = 1.0f;
 constexpr float kMinWarpOutputPx = 2400.0f;
 constexpr float kMaxWarpOutputPx = 5200.0f;

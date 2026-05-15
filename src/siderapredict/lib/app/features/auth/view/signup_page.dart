@@ -1,120 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:validatorless/validatorless.dart';
 
-import 'package:siderapredict/app/core/theme/theme.dart';
-import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
-import 'package:siderapredict/app/routes/app_routes.dart';
+import 'package:siderapredict/app/core/theme/app_theme.dart';
 import 'package:siderapredict/app/features/auth/view/widgets/auth_background.dart';
-import 'package:siderapredict/app/features/auth/view/widgets/premium_text_field.dart';
-import 'package:siderapredict/app/features/auth/view/widgets/password_validator_widget.dart';
+import 'package:siderapredict/app/features/auth/view/widgets/auth_text_field.dart';
+import 'package:siderapredict/app/features/auth/view/widgets/password_requirements_widget.dart';
+import 'package:siderapredict/app/features/auth/view/widgets/auth_success_overlay.dart';
+import 'package:siderapredict/app/features/auth/viewmodel/signup_view_model.dart';
 
-import 'package:siderapredict/app/core/utils/premium_alerts.dart';
-
-import 'package:siderapredict/app/features/auth/view/widgets/success_overlay.dart';
-
-class SignupPage extends StatefulWidget {
+class SignupPage extends StatelessWidget {
   const SignupPage({super.key});
 
   @override
-  State<SignupPage> createState() => _SignupPageState();
-}
-
-class _SignupPageState extends State<SignupPage> {
-  final _nomeEC = TextEditingController();
-  final _matriculaEC = TextEditingController();
-  final _emailEC = TextEditingController();
-  final _passwordEC = TextEditingController();
-  final _confirmPasswordEC = TextEditingController();
-
-  final _formKeyNome = GlobalKey<FormState>();
-  final _formKeyMatricula = GlobalKey<FormState>();
-  final _formKeyEmail = GlobalKey<FormState>();
-  final _formKeySenha = GlobalKey<FormState>();
-
-  final _pageController = PageController();
-  int _currentStep = 0;
-  bool _showSuccess = false;
-
-  @override
-  void dispose() {
-    _nomeEC.dispose();
-    _matriculaEC.dispose();
-    _emailEC.dispose();
-    _passwordEC.dispose();
-    _confirmPasswordEC.dispose();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _nextStep(AuthViewModel viewModel, GlobalKey<FormState> formKey) async {
-    if (formKey.currentState?.validate() ?? false) {
-      // 1. Check Matricula uniqueness
-      if (_currentStep == 1) {
-        final available = await viewModel.checkMatriculaAvailable(_matriculaEC.text);
-        if (!available && mounted) {
-          PremiumAlerts.showError(context, viewModel.errorMessage ?? 'Matrícula indisponível');
-          return;
-        }
-      }
-
-      // 2. Check Email uniqueness
-      if (_currentStep == 2) {
-        final available = await viewModel.checkEmailAvailable(_emailEC.text);
-        if (!available && mounted) {
-          PremiumAlerts.showError(context, viewModel.errorMessage ?? 'E-mail indisponível');
-          return;
-        }
-      }
-
-      viewModel.clearError();
-      setState(() => _currentStep++);
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
-  void _prevStep(AuthViewModel viewModel) {
-    viewModel.clearError();
-    setState(() => _currentStep--);
-    _pageController.previousPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  void _signup(AuthViewModel viewModel) async {
-    if (_formKeySenha.currentState?.validate() ?? false) {
-      // Password rule validation
-      final pwd = _passwordEC.text;
-      if (pwd.length < 8 ||
-          !pwd.contains(RegExp(r'[A-Z]')) ||
-          !pwd.contains(RegExp(r'[0-9]')) ||
-          !pwd.contains(RegExp(r'[!@#\$&*~_.,^\-+=\|/\\(){}\[\]]'))) {
-        return;
-      }
-
-      final success = await viewModel.signUp(
-        email: _emailEC.text,
-        password: _passwordEC.text,
-        matricula: _matriculaEC.text,
-        nome: _nomeEC.text,
-      );
-
-      if (success && mounted) {
-        setState(() => _showSuccess = true);
-      } else if (mounted && viewModel.errorMessage != null) {
-        PremiumAlerts.showError(context, viewModel.errorMessage!);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<AuthViewModel>();
+    final viewModel = context.watch<SignupViewModel>();
 
     return Scaffold(
       body: Stack(
@@ -127,58 +27,67 @@ class _SignupPageState extends State<SignupPage> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8.0, top: 16.0),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: whiteColor, size: 28),
-                      onPressed: () {
-                        if (_currentStep > 0) {
-                          _prevStep(viewModel);
-                        } else {
-                          Navigator.of(context).pop();
-                        }
-                      },
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: whiteColor,
+                        size: 28,
+                      ),
+                      onPressed: viewModel.backAction(context),
                     ),
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
-                    children: List.generate(4, (index) => Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: index <= _currentStep ? whiteColor : whiteColor.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(2),
+                    children: List.generate(
+                      4,
+                      (index) => Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: index <= viewModel.currentStep
+                                ? whiteColor
+                                : whiteColor.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
-                    )),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 Expanded(
                   child: PageView(
-                    controller: _pageController,
+                    controller: viewModel.pageController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
                       _buildStep(
                         title: 'Como podemos te chamar?',
                         subtitle: 'Insira seu nome completo',
-                        formKey: _formKeyNome,
-                        child: PremiumTextField(
-                          controller: _nomeEC,
+                        formKey: viewModel.formKeyNome,
+                        child: AuthTextField(
+                          controller: viewModel.nomeController,
                           labelText: 'Nome',
                           prefixIcon: Icons.person_outline,
                           textInputAction: TextInputAction.next,
-                          onSubmitted: (_) => _nextStep(viewModel, _formKeyNome),
-                          validator: Validatorless.required('Nome obrigatório'),
+                          onSubmitted: viewModel.nextStepSubmittedAction(
+                            context,
+                            viewModel.formKeyNome,
+                          ),
+                          validator: viewModel.nomeValidator,
                         ),
-                        onNext: () => _nextStep(viewModel, _formKeyNome),
+                        onNext: viewModel.nextStepAction(
+                          context,
+                          viewModel.formKeyNome,
+                        ),
                       ),
                       _buildStep(
                         title: 'Qual a sua matrícula?',
                         subtitle: 'Insira o seu número de identificação',
-                        formKey: _formKeyMatricula,
-                        child: PremiumTextField(
-                          controller: _matriculaEC,
+                        formKey: viewModel.formKeyMatricula,
+                        child: AuthTextField(
+                          controller: viewModel.matriculaController,
                           labelText: 'Matrícula',
                           prefixIcon: Icons.badge_outlined,
                           keyboardType: TextInputType.number,
@@ -186,73 +95,78 @@ class _SignupPageState extends State<SignupPage> {
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           textInputAction: TextInputAction.next,
-                          onSubmitted: (_) => _nextStep(viewModel, _formKeyMatricula),
-                          validator: Validatorless.multiple([
-                            Validatorless.required('Matrícula obrigatória'),
-                            Validatorless.min(3, 'Matrícula muito curta'),
-                            Validatorless.number('Apenas números são permitidos'),
-                          ]),
+                          onSubmitted: viewModel.nextStepSubmittedAction(
+                            context,
+                            viewModel.formKeyMatricula,
+                          ),
+                          validator: viewModel.matriculaValidator,
                         ),
-                        onNext: () => _nextStep(viewModel, _formKeyMatricula),
+                        onNext: viewModel.nextStepAction(
+                          context,
+                          viewModel.formKeyMatricula,
+                        ),
                       ),
                       _buildStep(
                         title: 'Qual o seu melhor e-mail?',
                         subtitle: 'Usado para comunicação e recuperação',
-                        formKey: _formKeyEmail,
-                        child: PremiumTextField(
-                          controller: _emailEC,
+                        formKey: viewModel.formKeyEmail,
+                        child: AuthTextField(
+                          controller: viewModel.emailController,
                           labelText: 'E-mail',
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
-                          onSubmitted: (_) => _nextStep(viewModel, _formKeyEmail),
-                          validator: Validatorless.multiple([
-                            Validatorless.required('E-mail obrigatório'),
-                            Validatorless.email('E-mail inválido'),
-                          ]),
+                          onSubmitted: viewModel.nextStepSubmittedAction(
+                            context,
+                            viewModel.formKeyEmail,
+                          ),
+                          validator: viewModel.emailValidator,
                         ),
-                        onNext: () => _nextStep(viewModel, _formKeyEmail),
+                        onNext: viewModel.nextStepAction(
+                          context,
+                          viewModel.formKeyEmail,
+                        ),
                       ),
                       _buildStep(
                         title: 'Crie sua senha',
                         subtitle: 'Ela deve ser forte e segura',
-                        formKey: _formKeySenha,
+                        formKey: viewModel.formKeySenha,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            PremiumTextField(
-                              controller: _passwordEC,
+                            AuthTextField(
+                              controller: viewModel.passwordController,
                               labelText: 'Senha',
                               prefixIcon: Icons.lock_outline,
                               obscureText: true,
                               textInputAction: TextInputAction.next,
                             ),
                             const SizedBox(height: 16),
-                            PremiumTextField(
-                              controller: _confirmPasswordEC,
+                            AuthTextField(
+                              controller: viewModel.confirmPasswordController,
                               labelText: 'Confirmar Senha',
                               prefixIcon: Icons.lock_outline,
                               obscureText: true,
                               textInputAction: TextInputAction.done,
-                              onSubmitted: (_) => _signup(viewModel),
-                              validator: Validatorless.multiple([
-                                Validatorless.required('Confirmação obrigatória'),
-                                Validatorless.compare(_passwordEC, 'As senhas não coincidem'),
-                              ]),
+                              onSubmitted: viewModel.signupSubmittedAction(
+                                context,
+                              ),
+                              validator: viewModel.confirmPasswordValidator,
                             ),
                             const SizedBox(height: 24),
                             ListenableBuilder(
-                              listenable: Listenable.merge([_passwordEC, _confirmPasswordEC]),
+                              listenable: viewModel.passwordFieldsListenable,
                               builder: (context, child) {
-                                return PasswordValidatorWidget(
-                                  password: _passwordEC.text,
-                                  confirmPassword: _confirmPasswordEC.text,
+                                return PasswordRequirementsWidget(
+                                  password: viewModel.passwordController.text,
+                                  confirmPassword:
+                                      viewModel.confirmPasswordController.text,
                                 );
                               },
                             ),
                           ],
                         ),
-                        onNext: () => _signup(viewModel),
+                        onNext: viewModel.signupAction(context),
                         isLast: true,
                         isLoading: viewModel.isLoading,
                       ),
@@ -262,14 +176,9 @@ class _SignupPageState extends State<SignupPage> {
               ],
             ),
           ),
-          SuccessOverlay(
-            visible: _showSuccess,
-            onComplete: () {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                AppRoutes.menuPrincipal,
-                (route) => false,
-              );
-            },
+          AuthSuccessOverlay(
+            visible: viewModel.showSuccess,
+            onComplete: viewModel.successCompleteAction(context),
           ),
         ],
       ),

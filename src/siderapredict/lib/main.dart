@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:siderapredict/app/app_widget.dart';
+import 'package:siderapredict/app/sidera_predict_app.dart';
 import 'package:siderapredict/firebase_options.dart';
 
 Future<void> main() async {
@@ -46,5 +46,7 @@ Future<void> main() async {
 
   final sharedPreferences = await SharedPreferences.getInstance();
 
-  runApp(AppWidget(cameras: cameras, sharedPreferences: sharedPreferences));
+  runApp(
+    SideraPredictApp(cameras: cameras, sharedPreferences: sharedPreferences),
+  );
 }

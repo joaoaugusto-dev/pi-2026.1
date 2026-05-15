@@ -24,7 +24,10 @@ class ReportExportService {
   Future<pw.MemoryImage?> _loadLogo() async {
     try {
       final data = await rootBundle.load('assets/soufer.png');
-      final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      final bytes = data.buffer.asUint8List(
+        data.offsetInBytes,
+        data.lengthInBytes,
+      );
       return pw.MemoryImage(bytes);
     } catch (e) {
       debugPrint('Erro ao carregar logo para PDF: $e');
@@ -83,7 +86,10 @@ class ReportExportService {
                     if (logo != null)
                       pw.Container(
                         height: 40,
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         margin: const pw.EdgeInsets.only(right: 12),
                         decoration: pw.BoxDecoration(
                           color: _brandColor,
@@ -104,7 +110,10 @@ class ReportExportService {
                         ),
                         pw.Text(
                           'Relatorio Tecnico de Medicao',
-                          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            color: PdfColors.grey700,
+                          ),
                         ),
                       ],
                     ),
@@ -119,13 +128,21 @@ class ReportExportService {
                     ),
                     pw.Text(
                       'ID: ${record.id.substring(0, 8).toUpperCase()}',
-                      style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                      style: pw.TextStyle(
+                        fontSize: 9,
+                        color: PdfColors.grey600,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
-            pw.Divider(thickness: 1.5, color: _brandColor, indent: 0, endIndent: 0),
+            pw.Divider(
+              thickness: 1.5,
+              color: _brandColor,
+              indent: 0,
+              endIndent: 0,
+            ),
             pw.SizedBox(height: 20),
 
             pw.Row(
@@ -158,26 +175,56 @@ class ReportExportService {
                       _buildPdfSectionTitle('Dados da Peca'),
                       _buildPdfInfoRow('Nome:', record.pieceName),
                       if (record.draft.pieceNumberOfDay != null)
-                        _buildPdfInfoRow('Seq. Dia:', record.draft.pieceNumberOfDay.toString()),
+                        _buildPdfInfoRow(
+                          'Seq. Dia:',
+                          record.draft.pieceNumberOfDay.toString(),
+                        ),
                       _buildPdfInfoRow(
                         'Status:',
-                        record.conformityStatus == ConformityStatus.ok ? 'CONFORME' : 'NAO CONFORME',
-                        valueColor: record.conformityStatus == ConformityStatus.ok ? PdfColors.green : PdfColors.red,
+                        record.conformityStatus == ConformityStatus.ok
+                            ? 'CONFORME'
+                            : 'NAO CONFORME',
+                        valueColor:
+                            record.conformityStatus == ConformityStatus.ok
+                            ? PdfColors.green
+                            : PdfColors.red,
                       ),
                       if (record.conformityStatus == ConformityStatus.nok) ...[
-                        _buildPdfInfoRow('Motivo:', record.nonConformityReason ?? 'N/A'),
-                        if (record.nonConformityObservation?.isNotEmpty ?? false)
-                          _buildPdfInfoRow('Obs:', record.nonConformityObservation!),
+                        _buildPdfInfoRow(
+                          'Motivo:',
+                          record.nonConformityReason ?? 'N/A',
+                        ),
+                        if (record.nonConformityObservation?.isNotEmpty ??
+                            false)
+                          _buildPdfInfoRow(
+                            'Obs:',
+                            record.nonConformityObservation!,
+                          ),
                       ],
                       pw.SizedBox(height: 15),
 
                       _buildPdfSectionTitle('Dimensoes Gerais'),
-                      _buildPdfInfoRow('Largura:', '${record.draft.widthMm.toStringAsFixed(2)} mm'),
-                      _buildPdfInfoRow('Altura:', '${record.draft.heightMm.toStringAsFixed(2)} mm'),
-                      _buildPdfInfoRow('Perimetro:', '${record.draft.perimeterMm.toStringAsFixed(2)} mm'),
-                      _buildPdfInfoRow('Area:', '${record.draft.areaMm2.toStringAsFixed(2)} mm2'),
+                      _buildPdfInfoRow(
+                        'Largura:',
+                        '${record.draft.widthMm.toStringAsFixed(2)} mm',
+                      ),
+                      _buildPdfInfoRow(
+                        'Altura:',
+                        '${record.draft.heightMm.toStringAsFixed(2)} mm',
+                      ),
+                      _buildPdfInfoRow(
+                        'Perimetro:',
+                        '${record.draft.perimeterMm.toStringAsFixed(2)} mm',
+                      ),
+                      _buildPdfInfoRow(
+                        'Area:',
+                        '${record.draft.areaMm2.toStringAsFixed(2)} mm2',
+                      ),
                       if (record.draft.scaleMicronsPerPx != null)
-                        _buildPdfInfoRow('Escala:', '${record.draft.scaleMicronsPerPx!.toStringAsFixed(2)} um/px'),
+                        _buildPdfInfoRow(
+                          'Escala:',
+                          '${record.draft.scaleMicronsPerPx!.toStringAsFixed(2)} um/px',
+                        ),
                     ],
                   ),
                 ),
@@ -189,12 +236,21 @@ class ReportExportService {
               _buildPdfSectionTitle('Segmentos Detalhados'),
               pw.TableHelper.fromTextArray(
                 headers: ['Tipo/Label', 'Valor Medido'],
-                data: record.draft.segments.map((s) => [s.label, s.displayValue]).toList(),
-                headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10),
+                data: record.draft.segments
+                    .map((s) => [s.label, s.displayValue])
+                    .toList(),
+                headerStyle: pw.TextStyle(
+                  color: PdfColors.white,
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 10,
+                ),
                 headerDecoration: const pw.BoxDecoration(color: _brandColor),
                 cellAlignment: pw.Alignment.centerLeft,
                 cellStyle: const pw.TextStyle(fontSize: 9),
-                columnWidths: {0: const pw.FlexColumnWidth(2), 1: const pw.FlexColumnWidth(1)},
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(2),
+                  1: const pw.FlexColumnWidth(1),
+                },
               ),
               pw.SizedBox(height: 20),
             ],
@@ -209,11 +265,13 @@ class ReportExportService {
                 border: pw.Border.all(color: PdfColors.grey200),
               ),
               child: pw.Text(
-                record.aiReport.isEmpty ? 'Nenhum relatorio gerado.' : record.aiReport,
+                record.aiReport.isEmpty
+                    ? 'Nenhum relatorio gerado.'
+                    : record.aiReport,
                 style: const pw.TextStyle(fontSize: 10, height: 1.4),
               ),
             ),
-            
+
             pw.Spacer(),
             pw.Divider(color: PdfColors.grey300),
             pw.Row(
@@ -225,7 +283,11 @@ class ReportExportService {
                 ),
                 pw.Text(
                   'Documento gerado automaticamente.',
-                  style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500, fontStyle: pw.FontStyle.italic),
+                  style: pw.TextStyle(
+                    fontSize: 7,
+                    color: PdfColors.grey500,
+                    fontStyle: pw.FontStyle.italic,
+                  ),
                 ),
               ],
             ),
@@ -263,13 +325,20 @@ class ReportExportService {
     );
   }
 
-  pw.Widget _buildPdfInfoRow(String label, String value, {PdfColor? valueColor}) {
+  pw.Widget _buildPdfInfoRow(
+    String label,
+    String value, {
+    PdfColor? valueColor,
+  }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 4),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+          pw.Text(
+            label,
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+          ),
           pw.Text(
             value,
             style: pw.TextStyle(
@@ -324,7 +393,10 @@ class ReportExportService {
                 if (logo != null)
                   pw.Container(
                     height: 30,
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
                     decoration: pw.BoxDecoration(
                       color: _brandColor,
                       borderRadius: pw.BorderRadius.circular(4),
@@ -335,7 +407,11 @@ class ReportExportService {
                   pw.SizedBox(),
                 pw.Text(
                   'Relatorio Consolidado - Sidera Predict',
-                  style: pw.TextStyle(color: _brandColor, fontSize: 10, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    color: _brandColor,
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -375,16 +451,31 @@ class ReportExportService {
 
           content.add(
             pw.TableHelper.fromTextArray(
-              headers: ['Data/Hora', 'Peca', 'Status', 'L (mm)', 'A (mm)', 'Area (mm2)'],
-              data: records.map((r) => [
-                dateFormat.format(r.createdAt.toLocal()),
-                r.pieceName,
-                r.conformityStatus == ConformityStatus.ok ? 'OK' : 'NOK',
-                r.draft.widthMm.toStringAsFixed(1),
-                r.draft.heightMm.toStringAsFixed(1),
-                r.draft.areaMm2.toStringAsFixed(0),
-              ]).toList(),
-              headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
+              headers: [
+                'Data/Hora',
+                'Peca',
+                'Status',
+                'L (mm)',
+                'A (mm)',
+                'Area (mm2)',
+              ],
+              data: records
+                  .map(
+                    (r) => [
+                      dateFormat.format(r.createdAt.toLocal()),
+                      r.pieceName,
+                      r.conformityStatus == ConformityStatus.ok ? 'OK' : 'NOK',
+                      r.draft.widthMm.toStringAsFixed(1),
+                      r.draft.heightMm.toStringAsFixed(1),
+                      r.draft.areaMm2.toStringAsFixed(0),
+                    ],
+                  )
+                  .toList(),
+              headerStyle: pw.TextStyle(
+                color: PdfColors.white,
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+              ),
               headerDecoration: const pw.BoxDecoration(color: _brandColor),
               cellStyle: const pw.TextStyle(fontSize: 8),
               columnWidths: {
@@ -402,9 +493,18 @@ class ReportExportService {
           content.add(
             pw.Row(
               children: [
-                pw.Text('DETALHAMENTO POR ITEM', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _brandColor)),
+                pw.Text(
+                  'DETALHAMENTO POR ITEM',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _brandColor,
+                  ),
+                ),
                 pw.SizedBox(width: 8),
-                pw.Expanded(child: pw.Divider(color: _brandColor, thickness: 0.5)),
+                pw.Expanded(
+                  child: pw.Divider(color: _brandColor, thickness: 0.5),
+                ),
               ],
             ),
           );
@@ -446,7 +546,10 @@ class ReportExportService {
                             child: pw.ClipRRect(
                               horizontalRadius: 4,
                               verticalRadius: 4,
-                              child: pw.Image(thumbProvider, fit: pw.BoxFit.cover),
+                              child: pw.Image(
+                                thumbProvider,
+                                fit: pw.BoxFit.cover,
+                              ),
                             ),
                           ),
                         pw.Expanded(
@@ -455,49 +558,73 @@ class ReportExportService {
                             children: [
                               pw.Text(
                                 record.pieceName.toUpperCase(),
-                                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: _brandColor),
+                                style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 11,
+                                  color: _brandColor,
+                                ),
                               ),
                               pw.Text(
                                 dateFormat.format(record.createdAt.toLocal()),
-                                style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                                style: pw.TextStyle(
+                                  fontSize: 8,
+                                  color: PdfColors.grey600,
+                                ),
                               ),
                               pw.SizedBox(height: 6),
-                               pw.Text(
+                              pw.Text(
                                 'Dimensoes: ${record.draft.widthMm.toStringAsFixed(2)} x ${record.draft.heightMm.toStringAsFixed(2)} mm',
                                 style: const pw.TextStyle(fontSize: 9),
-                                ),
-                                pw.Text(
+                              ),
+                              pw.Text(
                                 'Perimetro: ${record.draft.perimeterMm.toStringAsFixed(2)} mm | Area: ${record.draft.areaMm2.toStringAsFixed(0)} mm2',
                                 style: const pw.TextStyle(fontSize: 9),
-                                ),
-                                pw.SizedBox(height: 4),
-                                pw.Row(
+                              ),
+                              pw.SizedBox(height: 4),
+                              pw.Row(
                                 children: [
-                                    pw.Text(
+                                  pw.Text(
                                     'STATUS: ',
-                                    style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-                                    ),
-                                    pw.Text(
-                                    record.conformityStatus == ConformityStatus.ok ? 'CONFORME' : 'NAO CONFORME',
                                     style: pw.TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: pw.FontWeight.bold,
-                                        color: record.conformityStatus == ConformityStatus.ok ? PdfColors.green : PdfColors.red,
+                                      fontSize: 9,
+                                      fontWeight: pw.FontWeight.bold,
                                     ),
+                                  ),
+                                  pw.Text(
+                                    record.conformityStatus ==
+                                            ConformityStatus.ok
+                                        ? 'CONFORME'
+                                        : 'NAO CONFORME',
+                                    style: pw.TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: pw.FontWeight.bold,
+                                      color:
+                                          record.conformityStatus ==
+                                              ConformityStatus.ok
+                                          ? PdfColors.green
+                                          : PdfColors.red,
                                     ),
+                                  ),
                                 ],
-                                ),
-                                if (record.conformityStatus == ConformityStatus.nok) ...[
+                              ),
+                              if (record.conformityStatus ==
+                                  ConformityStatus.nok) ...[
                                 pw.Text(
-                                    'Motivo: ${record.nonConformityReason ?? 'N/A'}',
-                                    style: const pw.TextStyle(fontSize: 8),
+                                  'Motivo: ${record.nonConformityReason ?? 'N/A'}',
+                                  style: const pw.TextStyle(fontSize: 8),
                                 ),
-                                if (record.nonConformityObservation?.isNotEmpty ?? false)
-                                    pw.Text(
+                                if (record
+                                        .nonConformityObservation
+                                        ?.isNotEmpty ??
+                                    false)
+                                  pw.Text(
                                     'Obs: ${record.nonConformityObservation}',
-                                    style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic),
+                                    style: pw.TextStyle(
+                                      fontSize: 8,
+                                      fontStyle: pw.FontStyle.italic,
                                     ),
-                                ],
+                                  ),
+                              ],
                             ],
                           ),
                         ),
@@ -505,13 +632,27 @@ class ReportExportService {
                     ),
                     if (record.draft.segments.isNotEmpty) ...[
                       pw.SizedBox(height: 8),
-                      pw.Text('Segmentos:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                      pw.Text(
+                        'Segmentos:',
+                        style: pw.TextStyle(
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.grey800,
+                        ),
+                      ),
                       pw.Wrap(
                         spacing: 8,
-                        children: record.draft.segments.map((s) => pw.Text(
-                          '${s.label}: ${s.displayValue}',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-                        )).toList(),
+                        children: record.draft.segments
+                            .map(
+                              (s) => pw.Text(
+                                '${s.label}: ${s.displayValue}',
+                                style: const pw.TextStyle(
+                                  fontSize: 8,
+                                  color: PdfColors.grey700,
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
                     ],
                     pw.SizedBox(height: 8),
@@ -528,12 +669,22 @@ class ReportExportService {
                         children: [
                           pw.Text(
                             'RESUMO IA:',
-                            style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColors.grey600),
+                            style: pw.TextStyle(
+                              fontSize: 7,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.grey600,
+                            ),
                           ),
                           pw.SizedBox(height: 2),
                           pw.Text(
-                            record.aiReport.isEmpty ? 'Sem análise disponível.' : record.aiReport,
-                            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800, height: 1.3),
+                            record.aiReport.isEmpty
+                                ? 'Sem análise disponível.'
+                                : record.aiReport,
+                            style: const pw.TextStyle(
+                              fontSize: 8,
+                              color: PdfColors.grey800,
+                              height: 1.3,
+                            ),
                           ),
                         ],
                       ),
@@ -582,23 +733,44 @@ class ReportExportService {
       verticalAlign: VerticalAlign.Center,
       backgroundColorHex: ExcelColor.fromHexString('#B71C1C'),
       fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
-      bottomBorder: Border(borderStyle: BorderStyle.Medium, borderColorHex: ExcelColor.fromHexString('#000000')),
+      bottomBorder: Border(
+        borderStyle: BorderStyle.Medium,
+        borderColorHex: ExcelColor.fromHexString('#000000'),
+      ),
     );
 
     final cellStyle = CellStyle(
       horizontalAlign: HorizontalAlign.Left,
       verticalAlign: VerticalAlign.Center,
-      leftBorder: Border(borderStyle: BorderStyle.Thin, borderColorHex: ExcelColor.fromHexString('#D5D8DC')),
-      rightBorder: Border(borderStyle: BorderStyle.Thin, borderColorHex: ExcelColor.fromHexString('#D5D8DC')),
-      bottomBorder: Border(borderStyle: BorderStyle.Thin, borderColorHex: ExcelColor.fromHexString('#D5D8DC')),
+      leftBorder: Border(
+        borderStyle: BorderStyle.Thin,
+        borderColorHex: ExcelColor.fromHexString('#D5D8DC'),
+      ),
+      rightBorder: Border(
+        borderStyle: BorderStyle.Thin,
+        borderColorHex: ExcelColor.fromHexString('#D5D8DC'),
+      ),
+      bottomBorder: Border(
+        borderStyle: BorderStyle.Thin,
+        borderColorHex: ExcelColor.fromHexString('#D5D8DC'),
+      ),
     );
 
     final numberStyle = CellStyle(
       horizontalAlign: HorizontalAlign.Right,
       verticalAlign: VerticalAlign.Center,
-      leftBorder: Border(borderStyle: BorderStyle.Thin, borderColorHex: ExcelColor.fromHexString('#D5D8DC')),
-      rightBorder: Border(borderStyle: BorderStyle.Thin, borderColorHex: ExcelColor.fromHexString('#D5D8DC')),
-      bottomBorder: Border(borderStyle: BorderStyle.Thin, borderColorHex: ExcelColor.fromHexString('#D5D8DC')),
+      leftBorder: Border(
+        borderStyle: BorderStyle.Thin,
+        borderColorHex: ExcelColor.fromHexString('#D5D8DC'),
+      ),
+      rightBorder: Border(
+        borderStyle: BorderStyle.Thin,
+        borderColorHex: ExcelColor.fromHexString('#D5D8DC'),
+      ),
+      bottomBorder: Border(
+        borderStyle: BorderStyle.Thin,
+        borderColorHex: ExcelColor.fromHexString('#D5D8DC'),
+      ),
     );
 
     for (int col = 0; col < headers.length; col++) {
@@ -615,7 +787,9 @@ class ReportExportService {
       sheet.appendRow(<CellValue>[
         TextCellValue(dateFormat.format(record.createdAt.toLocal())),
         TextCellValue(record.pieceName),
-        TextCellValue(record.conformityStatus == ConformityStatus.ok ? 'OK' : 'NOK'),
+        TextCellValue(
+          record.conformityStatus == ConformityStatus.ok ? 'OK' : 'NOK',
+        ),
         TextCellValue(record.nonConformityReason ?? ''),
         TextCellValue(record.nonConformityObservation ?? ''),
         DoubleCellValue(record.draft.widthMm),
@@ -625,14 +799,46 @@ class ReportExportService {
         TextCellValue(record.aiReport.trim().isEmpty ? 'N/A' : record.aiReport),
       ]);
 
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex)).cellStyle = cellStyle;
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex)).cellStyle = cellStyle;
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex)).cellStyle = numberStyle;
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex)).cellStyle = numberStyle;
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex)).cellStyle = numberStyle;
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex)).cellStyle = numberStyle;
-      
-      final reportCell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex));
+      sheet
+              .cell(
+                CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex),
+              )
+              .cellStyle =
+          cellStyle;
+      sheet
+              .cell(
+                CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex),
+              )
+              .cellStyle =
+          cellStyle;
+      sheet
+              .cell(
+                CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex),
+              )
+              .cellStyle =
+          numberStyle;
+      sheet
+              .cell(
+                CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex),
+              )
+              .cellStyle =
+          numberStyle;
+      sheet
+              .cell(
+                CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex),
+              )
+              .cellStyle =
+          numberStyle;
+      sheet
+              .cell(
+                CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex),
+              )
+              .cellStyle =
+          numberStyle;
+
+      final reportCell = sheet.cell(
+        CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex),
+      );
       reportCell.cellStyle = cellStyle;
     }
 
@@ -644,8 +850,7 @@ class ReportExportService {
       sheet.setColumnWidth(4, 18);
       sheet.setColumnWidth(5, 18);
       sheet.setColumnWidth(6, 60);
-    } catch (_) {
-    }
+    } catch (_) {}
 
     final bytes = excel.encode();
     if (bytes == null) {

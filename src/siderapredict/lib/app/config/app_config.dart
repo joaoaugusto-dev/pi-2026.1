@@ -24,9 +24,7 @@ class AppConfig {
     final messages = <String>[];
 
     if (!isFirestoreConfigured) {
-      messages.add(
-        'Preencha `FIRESTORE_COLLECTION` no `.env`.',
-      );
+      messages.add('Preencha `FIRESTORE_COLLECTION` no `.env`.');
     }
 
     final rawOllamaBaseUrl = _normalizeBaseUrl(_read(_ollamaBaseUrlKey));
