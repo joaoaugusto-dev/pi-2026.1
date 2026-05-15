@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -12,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:siderapredict/app/core/widgets/zoomable_image_overlay.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_view_model.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
+import 'package:siderapredict/app/core/theme/app_theme.dart';
 
 typedef HistoryDetailsBuilder = Widget Function(BuildContext context);
 
@@ -19,7 +19,6 @@ class HistoryViewModel extends ChangeNotifier {
   HistoryViewModel({required InspectionViewModel inspectionViewModel})
     : _inspectionViewModel = inspectionViewModel {
     _inspectionViewModel.addListener(notifyListeners);
-    unawaited(loadHistory());
   }
 
   final InspectionViewModel _inspectionViewModel;
@@ -34,6 +33,10 @@ class HistoryViewModel extends ChangeNotifier {
 
   List<MeasurementRecord> get history => _inspectionViewModel.history;
   bool get isLoading => _inspectionViewModel.isLoadingHistory;
+  String get realtimeScopeKey =>
+      _inspectionViewModel.currentUserId?.trim().isNotEmpty == true
+      ? _inspectionViewModel.currentUserId!.trim()
+      : 'anonymous';
 
   Future<void> loadHistory() => _inspectionViewModel.loadHistory();
 
@@ -74,30 +77,28 @@ class HistoryViewModel extends ChangeNotifier {
     return await _inspectionViewModel.deleteRecordById(id);
   }
 
+  bool canDeleteRecord(MeasurementRecord record) =>
+      _inspectionViewModel.canDeleteRecord(record);
+
+  bool shouldAnimateRealtimeCue(MeasurementRecord record) =>
+      !_inspectionViewModel.isOwnedByCurrentUser(record);
+
   MeasurementRecord? recordById(String id) =>
       _inspectionViewModel.recordById(id);
 
-  Uint8List? imageBytesFor(
+  Future<Uint8List?> imageBytesFor(
     MeasurementRecord record, {
     bool preferDetailedImage = false,
-  }) {
-    final imageBase64 = preferDetailedImage
-        ? (record.photoBase64 ?? record.thumbnailBase64)
-        : (record.thumbnailBase64 ?? record.photoBase64);
-    if (imageBase64 == null) return null;
+  }) => _inspectionViewModel.imageBytesFor(
+    record,
+    preferDetailedImage: preferDetailedImage,
+  );
 
-    try {
-      return base64Decode(imageBase64);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  ImageProvider<Object>? recordImageProvider(
+  Future<ImageProvider<Object>?> recordImageProvider(
     MeasurementRecord record, {
     bool preferDetailedImage = false,
-  }) {
-    final bytes = imageBytesFor(
+  }) async {
+    final bytes = await imageBytesFor(
       record,
       preferDetailedImage: preferDetailedImage,
     );
@@ -213,6 +214,16 @@ class HistoryViewModel extends ChangeNotifier {
     BuildContext context,
     MeasurementRecord record,
   ) async {
+    if (!canDeleteRecord(record)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Você não tem permissão para excluir esta medição.'),
+          backgroundColor: paletteRed,
+        ),
+      );
+      return false;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

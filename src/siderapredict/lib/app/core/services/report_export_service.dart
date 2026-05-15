@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -14,8 +13,19 @@ import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 
+typedef MeasurementImageLoader =
+    Future<Uint8List?> Function(
+      MeasurementRecord record, {
+      bool preferDetailedImage,
+    });
+
 class ReportExportService {
+  ReportExportService({MeasurementImageLoader? imageLoader})
+    : _imageLoader = imageLoader;
+
   static const _brandColor = PdfColor.fromInt(0xFFB71C1C);
+
+  final MeasurementImageLoader? _imageLoader;
 
   String _sanitizeFileName(String name) {
     return name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
@@ -33,6 +43,17 @@ class ReportExportService {
       debugPrint('Erro ao carregar logo para PDF: $e');
       return null;
     }
+  }
+
+  Future<Uint8List?> _loadRecordImage(
+    MeasurementRecord record, {
+    bool preferDetailedImage = false,
+  }) async {
+    final imageLoader = _imageLoader;
+    if (imageLoader != null) {
+      return imageLoader(record, preferDetailedImage: preferDetailedImage);
+    }
+    return null;
   }
 
   Future<File?> _saveFile(String fileName, List<int> bytes) async {
@@ -64,12 +85,12 @@ class ReportExportService {
     final logo = await _loadLogo();
 
     pw.MemoryImage? imageProvider;
-    final imageBase64 = record.photoBase64 ?? record.thumbnailBase64;
-    if (imageBase64 != null) {
-      try {
-        final bytes = base64Decode(imageBase64);
-        imageProvider = pw.MemoryImage(bytes);
-      } catch (_) {}
+    final imageBytes = await _loadRecordImage(
+      record,
+      preferDetailedImage: true,
+    );
+    if (imageBytes != null) {
+      imageProvider = pw.MemoryImage(imageBytes);
     }
 
     doc.addPage(
@@ -380,6 +401,14 @@ class ReportExportService {
     final doc = pw.Document();
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
     final logo = await _loadLogo();
+    final thumbnailProviders = <String, pw.MemoryImage?>{};
+
+    for (final record in records) {
+      final bytes = await _loadRecordImage(record);
+      thumbnailProviders[record.id] = bytes == null
+          ? null
+          : pw.MemoryImage(bytes);
+    }
 
     doc.addPage(
       pw.MultiPage(
@@ -511,13 +540,7 @@ class ReportExportService {
           content.add(pw.SizedBox(height: 15));
 
           for (final record in records) {
-            pw.MemoryImage? thumbProvider;
-            final thumbBase64 = record.thumbnailBase64 ?? record.photoBase64;
-            if (thumbBase64 != null) {
-              try {
-                thumbProvider = pw.MemoryImage(base64Decode(thumbBase64));
-              } catch (_) {}
-            }
+            final thumbProvider = thumbnailProviders[record.id];
 
             content.add(
               pw.Container(

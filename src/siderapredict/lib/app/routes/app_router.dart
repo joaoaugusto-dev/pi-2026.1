@@ -31,11 +31,7 @@ class CameraArgs {
 
 class ProcessingArgs {
   final String imagePath;
-  final MeasurementSource source;
-  const ProcessingArgs({
-    required this.imagePath,
-    this.source = MeasurementSource.camera,
-  });
+  const ProcessingArgs({required this.imagePath});
 }
 
 class ValidationArgs {

@@ -1,18 +1,18 @@
 # Sidera Predict
 
 Aplicativo mobile Flutter para inspecao dimensional de pecas usando camera,
-visao computacional com OpenCV em C++ via FFI, historico em Firebase e geracao
+visao computacional com OpenCV em C++ via FFI, historico em Supabase e geracao
 de relatorios tecnicos com IA via Ollama.
 
 ## Funcionalidades
 
-- Autenticacao com Firebase Auth.
+- Autenticacao com Supabase Auth.
 - Cadastro e login por e-mail ou matricula.
 - Captura de imagem pela camera do dispositivo.
 - Overlay de enquadramento e nivel durante a captura.
 - Processamento nativo com OpenCV para calibracao, retificacao e medicao.
 - Validacao da medicao pelo operador com status conforme/nao conforme.
-- Historico persistido em Firestore com cache local.
+- Historico persistido em Supabase com cache local.
 - Relatorio tecnico por IA usando endpoint Ollama.
 - Exportacao de registros individuais ou historico consolidado em PDF e Excel.
 - Tema claro, tema escuro e modo de alto contraste.
@@ -33,7 +33,7 @@ de relatorios tecnicos com IA via Ollama.
 
 - Flutter / Dart.
 - Provider para estado e injecao de dependencias.
-- Firebase Core, Firebase Auth e Cloud Firestore.
+- Supabase Flutter, Supabase Auth, Postgres e Realtime.
 - OpenCV Android SDK integrado ao build Android.
 - C++ nativo com CMake para o motor de visao.
 - Ollama API para resumo tecnico.
@@ -47,7 +47,7 @@ lib/
   app/
     config/              Configuracao via .env
     core/
-      services/          Firebase, Ollama, medicao, exportacao e preferencias
+      services/          Supabase, Ollama, medicao, exportacao e preferencias
       theme/             Temas e identidade visual
       utils/             Utilitarios da aplicacao
       widgets/           Componentes compartilhados
@@ -70,7 +70,7 @@ assets/                  Icones e imagens da marca
 - Flutter compativel com Dart `^3.11.3`.
 - Android SDK e NDK configurados.
 - Java 17.
-- Firebase configurado para Android.
+- Projeto Supabase configurado.
 - OpenCV Android SDK disponivel em `OpenCV-android-sdk/` ou via variavel
   `OpenCV_DIR`.
 - Um endpoint Ollama acessivel publicamente por HTTPS, se a geracao de relatorio
@@ -82,37 +82,53 @@ A aplicacao carrega configuracoes do arquivo `.env` na raiz do projeto. Crie o
 arquivo com as chaves abaixo:
 
 ```env
-FIRESTORE_COLLECTION=measurementHistory
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_ANON_KEY=sua-chave-anon
+SUPABASE_MEASUREMENTS_TABLE=measurement_records
+SUPABASE_IMAGES_BUCKET=measurement-images
 OLLAMA_BASE_URL=https://seu-endpoint-ollama.example.com
 OLLAMA_MODEL=llama3.1
 ```
 
 Observacoes:
 
-- `FIRESTORE_COLLECTION` define a colecao usada para salvar medicoes.
+- `SUPABASE_URL` e `SUPABASE_ANON_KEY` conectam o app ao projeto Supabase.
+- `SUPABASE_MEASUREMENTS_TABLE` deve existir no `.env` e apontar para a
+  tabela criada no script SQL.
+- `SUPABASE_IMAGES_BUCKET` deve existir no `.env` e apontar para o bucket
+  criado no script SQL.
 - `OLLAMA_BASE_URL` deve ser uma URL publica HTTPS.
-- URLs com `localhost`, IP interno, rede local ou HTTP simples sao recusadas pela
-  validacao da aplicacao.
+- Para o Ollama, URLs com `localhost`, IP interno, rede local ou HTTP simples
+  sao recusadas pela validacao da aplicacao.
 - `OLLAMA_MODEL` deve existir no servidor Ollama configurado.
-- Se alguma configuracao estiver ausente, o menu principal exibe os ajustes
-  pendentes.
+- Se alguma configuracao estiver ausente ou invalida, o app falha na
+  inicializacao com erro explicito.
 
-## Firebase
+## Supabase
 
-O projeto usa Firebase nativo, nao Firestore REST manual. Para executar em outro
-ambiente, confira:
+O projeto usa Supabase Auth para login/cadastro e Postgres para persistencia do
+historico. Antes de executar o app contra um projeto novo, rode o script:
 
-- `lib/firebase_options.dart`.
-- `android/app/google-services.json`.
-- Plugins Firebase em `android/settings.gradle.kts` e `android/app/build.gradle.kts`.
+```text
+supabase/schema.sql
+```
 
-Colecoes usadas pela autenticacao:
+Esse script cria:
 
-- `users`: perfil privado do usuario.
-- `matriculas`: indice para login por matricula.
-- `emails`: indice para verificacao de e-mail ja cadastrado.
+- `profiles`: perfil do usuario, e-mail e matricula.
+- `measurement_records`: historico de medicoes por usuario.
+- bucket privado `measurement-images`: fotos das medicoes no Storage.
+- RPCs `email_for_matricula`, `is_matricula_available` e
+  `is_email_available`.
+- Politicas RLS/Storage para cada usuario acessar apenas seus proprios
+  registros e imagens.
 
-A colecao de medicoes e definida por `FIRESTORE_COLLECTION`.
+O login por matricula consulta o e-mail via RPC e depois autentica normalmente
+pelo Supabase Auth.
+
+Durante a geracao do relatorio por IA, o app mostra o texto em streaming apenas
+em memoria/localmente. O Supabase recebe o registro uma unica vez, depois que o
+relatorio termina e as imagens sao enviadas ao Storage.
 
 ## OpenCV e motor nativo
 
@@ -188,7 +204,9 @@ O modelo de medicao armazena:
 ## Notas de desenvolvimento
 
 - A orientacao da aplicacao e bloqueada em retrato.
-- O historico usa Firestore com persistencia local habilitada.
+- O historico usa Supabase com cache local em arquivo JSON.
+- As fotos ficam no Supabase Storage; o banco guarda apenas caminhos e payload
+  final otimizado, sem base64.
 - Preferencias de tema ficam em `SharedPreferences`.
 - A exportacao usa `assets/soufer.png` como logo no PDF.
 - O pacote Android e `br.com.siderapredict.siderapredict`.

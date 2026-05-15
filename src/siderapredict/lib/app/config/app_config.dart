@@ -3,11 +3,20 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConfig {
   const AppConfig._();
 
-  static const String _firestoreCollectionKey = 'FIRESTORE_COLLECTION';
+  static const String _supabaseUrlKey = 'SUPABASE_URL';
+  static const String _supabaseAnonKey = 'SUPABASE_ANON_KEY';
+  static const String _supabaseMeasurementsTableKey =
+      'SUPABASE_MEASUREMENTS_TABLE';
+  static const String _supabaseImagesBucketKey = 'SUPABASE_IMAGES_BUCKET';
   static const String _ollamaBaseUrlKey = 'OLLAMA_BASE_URL';
   static const String _ollamaModelKey = 'OLLAMA_MODEL';
 
-  static String get firestoreCollection => _read(_firestoreCollectionKey);
+  static String get supabaseUrl => _read(_supabaseUrlKey);
+  static String get supabaseAnonKey => _read(_supabaseAnonKey);
+  static String get supabaseMeasurementsTable =>
+      _read(_supabaseMeasurementsTableKey);
+  static String get supabaseImagesBucket => _read(_supabaseImagesBucketKey);
+
   static String get ollamaBaseUrl {
     final raw = _normalizeBaseUrl(_read(_ollamaBaseUrlKey));
     return _isPublicHttpsUrl(raw) ? raw : '';
@@ -15,7 +24,11 @@ class AppConfig {
 
   static String get ollamaModel => _read(_ollamaModelKey);
 
-  static bool get isFirestoreConfigured => firestoreCollection.isNotEmpty;
+  static bool get isSupabaseConfigured =>
+      _isHttpUrl(supabaseUrl) &&
+      supabaseAnonKey.isNotEmpty &&
+      supabaseMeasurementsTable.isNotEmpty &&
+      supabaseImagesBucket.isNotEmpty;
 
   static bool get isOllamaConfigured =>
       ollamaBaseUrl.isNotEmpty && ollamaModel.isNotEmpty;
@@ -23,8 +36,22 @@ class AppConfig {
   static List<String> get validationMessages {
     final messages = <String>[];
 
-    if (!isFirestoreConfigured) {
-      messages.add('Preencha `FIRESTORE_COLLECTION` no `.env`.');
+    if (supabaseUrl.isEmpty) {
+      messages.add('Preencha `SUPABASE_URL` no `.env`.');
+    } else if (!_isHttpUrl(supabaseUrl)) {
+      messages.add('`SUPABASE_URL` precisa ser uma URL HTTP ou HTTPS válida.');
+    }
+
+    if (supabaseAnonKey.isEmpty) {
+      messages.add('Preencha `SUPABASE_ANON_KEY` no `.env`.');
+    }
+
+    if (supabaseMeasurementsTable.isEmpty) {
+      messages.add('Preencha `SUPABASE_MEASUREMENTS_TABLE` no `.env`.');
+    }
+
+    if (supabaseImagesBucket.isEmpty) {
+      messages.add('Preencha `SUPABASE_IMAGES_BUCKET` no `.env`.');
     }
 
     final rawOllamaBaseUrl = _normalizeBaseUrl(_read(_ollamaBaseUrlKey));
@@ -45,6 +72,15 @@ class AppConfig {
     return List<String>.unmodifiable(messages);
   }
 
+  static void validateOrThrow() {
+    final messages = validationMessages;
+    if (messages.isEmpty) return;
+
+    throw StateError(
+      'Configuração inválida no .env:\n${messages.map((m) => '- $m').join('\n')}',
+    );
+  }
+
   static String _read(String key) => (dotenv.env[key] ?? '').trim();
 
   static String _normalizeBaseUrl(String url) {
@@ -53,6 +89,16 @@ class AppConfig {
       normalized = normalized.substring(0, normalized.length - 1);
     }
     return normalized;
+  }
+
+  static bool _isHttpUrl(String rawUrl) {
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null || !uri.hasScheme || uri.host.trim().isEmpty) {
+      return false;
+    }
+
+    final scheme = uri.scheme.toLowerCase();
+    return scheme == 'http' || scheme == 'https';
   }
 
   static bool _isPublicHttpsUrl(String rawUrl) {

@@ -1,18 +1,19 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:siderapredict/app/core/services/auth_service.dart';
 import 'package:siderapredict/app/routes/app_routes.dart';
 
 class SplashViewModel extends ChangeNotifier {
   SplashViewModel({
     Future<void> Function()? startupDelay,
     bool Function()? hasAuthenticatedSession,
+    AuthService? authService,
   }) : _startupDelay =
            startupDelay ??
            (() => Future<void>.delayed(const Duration(milliseconds: 2500))),
        _hasAuthenticatedSession =
            hasAuthenticatedSession ??
-           (() => FirebaseAuth.instance.currentUser != null);
+           (() => (authService ?? AuthService()).currentUser != null);
 
   final Future<void> Function() _startupDelay;
   final bool Function() _hasAuthenticatedSession;

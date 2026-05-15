@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:siderapredict/app/core/services/auth_service.dart';
 
@@ -44,7 +43,7 @@ class AuthViewModel extends ChangeNotifier {
         _userName = await _authService.getUserName(credentials!.user!.uid);
       }
       return true;
-    } on FirebaseAuthException catch (e) {
+    } on AuthServiceException catch (e) {
       if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
         _setError('Credenciais inválidas. Verifique seus dados.');
       } else {
@@ -78,9 +77,11 @@ class AuthViewModel extends ChangeNotifier {
         _userName = nome.trim();
       }
       return true;
-    } on FirebaseAuthException catch (e) {
+    } on AuthServiceException catch (e) {
       if (e.code == 'email-already-in-use') {
         _setError('Este e-mail já está em uso.');
+      } else if (e.code == 'matricula-already-in-use') {
+        _setError('Esta matrícula já está cadastrada.');
       } else if (e.code == 'weak-password') {
         _setError('A senha é muito fraca.');
       } else {
@@ -106,7 +107,7 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchProfile() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
     if (user != null) {
       _userName = await _authService.getUserName(user.uid);
       notifyListeners();

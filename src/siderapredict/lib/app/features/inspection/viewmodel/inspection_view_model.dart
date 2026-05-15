@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:siderapredict/app/core/services/auth_service.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 import 'package:siderapredict/app/features/inspection/data/measurement_repository.dart';
 import 'package:siderapredict/app/core/services/measurement_service.dart';
@@ -14,7 +15,9 @@ class InspectionViewModel extends ChangeNotifier {
     required MeasurementService measurementService,
     required MeasurementRepository repository,
     required List<CameraDescription> cameras,
+    AuthService? authService,
   }) : _measurementService = measurementService,
+       _authService = authService ?? AuthService(),
        _repository = repository,
        availableCameras = cameras {
     _recordUpdatesSubscription = _repository.recordUpdates.listen(
@@ -23,15 +26,22 @@ class InspectionViewModel extends ChangeNotifier {
     _allRecordsSubscription = _repository.allRecords.listen(
       _updateHistoryFromRemote,
     );
+    _activeAuthUserId = _authService.currentUser?.uid;
+    _authStateSubscription = _authService.authStateChanges.listen(
+      _handleAuthStateChanged,
+    );
   }
 
   final MeasurementService _measurementService;
+  final AuthService _authService;
   final MeasurementRepository _repository;
   late final StreamSubscription<MeasurementRecord> _recordUpdatesSubscription;
   late final StreamSubscription<List<MeasurementRecord>>
   _allRecordsSubscription;
+  late final StreamSubscription<AuthenticatedUser?> _authStateSubscription;
 
   final List<CameraDescription> availableCameras;
+  String? _activeAuthUserId;
 
   MeasurementDraft? currentDraft;
   List<MeasurementRecord> history = const <MeasurementRecord>[];
@@ -40,6 +50,8 @@ class InspectionViewModel extends ChangeNotifier {
   bool isLoadingHistory = false;
   String? lastError;
 
+  String? get currentUserId => _activeAuthUserId;
+
   Future<void> processCapturedImage(String path) async {
     isProcessing = true;
     lastError = null;
@@ -47,9 +59,6 @@ class InspectionViewModel extends ChangeNotifier {
 
     try {
       currentDraft = await _measurementService.processImage(path);
-      if (currentDraft != null) {
-        currentDraft = currentDraft!.copyWith(source: MeasurementSource.camera);
-      }
     } catch (error) {
       lastError = error.toString();
       currentDraft = null;
@@ -102,11 +111,20 @@ class InspectionViewModel extends ChangeNotifier {
   }
 
   Future<void> loadHistory() async {
-    isLoadingHistory = true;
+    isLoadingHistory = history.isEmpty; // Only show spinner if we have NO data yet
     lastError = null;
     notifyListeners();
 
     try {
+      // 1. First, load local data for immediate feedback
+      final local = await _repository.getLocalHistory();
+      if (local.isNotEmpty) {
+        history = local;
+        isLoadingHistory = false;
+        notifyListeners();
+      }
+
+      // 2. Then, sync with remote
       history = await _repository.loadHistory();
     } catch (error) {
       lastError = error.toString();
@@ -158,10 +176,27 @@ class InspectionViewModel extends ChangeNotifier {
     }
   }
 
+  Future<Uint8List?> imageBytesFor(
+    MeasurementRecord record, {
+    bool preferDetailedImage = false,
+  }) {
+    return _repository.imageBytesFor(
+      record,
+      preferDetailedImage: preferDetailedImage,
+    );
+  }
+
   Future<bool> deleteRecordById(String id) async {
     final snapshot = history;
-    final exists = snapshot.any((record) => record.id == id);
-    if (!exists) {
+    MeasurementRecord? targetRecord;
+    for (final record in snapshot) {
+      if (record.id == id) {
+        targetRecord = record;
+        break;
+      }
+    }
+
+    if (targetRecord == null || !canDeleteRecord(targetRecord)) {
       return false;
     }
 
@@ -190,19 +225,43 @@ class InspectionViewModel extends ChangeNotifier {
     return null;
   }
 
+  bool canDeleteRecord(MeasurementRecord record) {
+    final currentUserId = _authService.currentUser?.uid;
+    if (currentUserId == null) {
+      return false;
+    }
+
+    final ownerUserId = record.ownerUserId?.trim();
+    return ownerUserId == null ||
+        ownerUserId.isEmpty ||
+        ownerUserId == currentUserId;
+  }
+
+  bool isOwnedByCurrentUser(MeasurementRecord record) {
+    final currentUserId = _authService.currentUser?.uid;
+    if (currentUserId == null) {
+      return false;
+    }
+
+    final ownerUserId = record.ownerUserId?.trim();
+    return ownerUserId == null ||
+        ownerUserId.isEmpty ||
+        ownerUserId == currentUserId;
+  }
+
   void _mergeRecordUpdate(MeasurementRecord updatedRecord) {
     history = _upsertHistory(history, updatedRecord);
     notifyListeners();
   }
 
   void _updateHistoryFromRemote(List<MeasurementRecord> remoteRecords) {
-    final Map<String, MeasurementRecord> merged = {
-      for (final r in history) r.id: r,
-      for (final r in remoteRecords) r.id: r,
-    };
-    history = merged.values.toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    notifyListeners();
+    unawaited(_repository.reconcileAndPersistHistory(
+      currentHistory: history,
+      remoteRecords: remoteRecords,
+    ).then((merged) {
+      history = merged;
+      notifyListeners();
+    }).catchError((_) {}));
   }
 
   List<MeasurementRecord> _upsertHistory(
@@ -238,6 +297,7 @@ class InspectionViewModel extends ChangeNotifier {
     return buildAutomaticPieceName(
       pieceNumberOfDay: pieceNumber,
       date: date ?? DateTime.now(),
+      employeeName: _authService.currentUser?.name,
     );
   }
 
@@ -247,10 +307,32 @@ class InspectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _handleAuthStateChanged(AuthenticatedUser? user) {
+    final nextUserId = user?.uid;
+    if (nextUserId == _activeAuthUserId) {
+      return;
+    }
+
+    _activeAuthUserId = nextUserId;
+    _repository.handleSessionChanged();
+    currentDraft = null;
+    history = const <MeasurementRecord>[];
+    lastError = null;
+    isProcessing = false;
+    isSaving = false;
+    isLoadingHistory = false;
+    notifyListeners();
+
+    if (nextUserId != null) {
+      unawaited(loadHistory());
+    }
+  }
+
   @override
   void dispose() {
     _recordUpdatesSubscription.cancel();
     _allRecordsSubscription.cancel();
+    _authStateSubscription.cancel();
     super.dispose();
   }
 }

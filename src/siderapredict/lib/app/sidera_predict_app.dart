@@ -6,11 +6,12 @@ import 'package:provider/provider.dart';
 import 'package:siderapredict/app/routes/app_router.dart';
 import 'package:siderapredict/app/routes/app_routes.dart';
 import 'package:siderapredict/app/config/app_config.dart';
-import 'package:siderapredict/app/core/services/firestore_service.dart';
 import 'package:siderapredict/app/core/services/local_history_store.dart';
 import 'package:siderapredict/app/core/services/measurement_service.dart';
 import 'package:siderapredict/app/core/services/ollama_report_service.dart';
 import 'package:siderapredict/app/core/services/report_export_service.dart';
+import 'package:siderapredict/app/core/services/supabase_image_storage_service.dart';
+import 'package:siderapredict/app/core/services/supabase_measurement_service.dart';
 import 'package:siderapredict/app/core/theme/app_theme.dart';
 import 'package:siderapredict/app/features/inspection/data/measurement_repository.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/inspection_view_model.dart';
@@ -27,39 +28,73 @@ final statusBarStyle = SystemUiOverlayStyle(
 );
 
 class SideraPredictApp extends StatelessWidget {
-  SideraPredictApp({
+  factory SideraPredictApp({
+    Key? key,
+    required List<CameraDescription> cameras,
+    required SharedPreferences sharedPreferences,
+  }) {
+    final authService = AuthService();
+    return SideraPredictApp._(
+      key: key,
+      cameras: cameras,
+      sharedPreferences: sharedPreferences,
+      authService: authService,
+    );
+  }
+
+  SideraPredictApp._({
     super.key,
     required List<CameraDescription> cameras,
     required SharedPreferences sharedPreferences,
-  }) : _viewModel = _buildViewModel(cameras),
+    required AuthService authService,
+  }) : _viewModel = _buildViewModel(
+         cameras,
+         authService: authService,
+         sharedPreferences: sharedPreferences,
+       ),
        _settingsViewModel = SettingsViewModel(
          settingsService: SettingsService(sharedPreferences),
        ),
-       _authViewModel = AuthViewModel(authService: AuthService());
+       _authViewModel = AuthViewModel(authService: authService);
 
   final InspectionViewModel _viewModel;
   final SettingsViewModel _settingsViewModel;
   final AuthViewModel _authViewModel;
 
-  static InspectionViewModel _buildViewModel(List<CameraDescription> cameras) {
-    final firestore = FirestoreService(
-      collectionName: AppConfig.firestoreCollection,
+  static InspectionViewModel _buildViewModel(
+    List<CameraDescription> cameras, {
+    required AuthService authService,
+    required SharedPreferences sharedPreferences,
+  }) {
+    final remoteService = SupabaseMeasurementService(
+      tableName: AppConfig.supabaseMeasurementsTable,
+    );
+    final imageStorageService = SupabaseImageStorageService(
+      bucketName: AppConfig.supabaseImagesBucket,
     );
 
     final repository = MeasurementRepository(
-      firestoreService: firestore,
-      localStore: LocalHistoryStore(),
+      remoteService: remoteService,
+      imageStorageService: imageStorageService,
+      localStore: LocalHistoryStore(
+        sessionKeyProvider: () => authService.currentUser?.uid,
+      ),
       ollamaService: OllamaReportService(
         baseUrl: AppConfig.ollamaBaseUrl,
         model: AppConfig.ollamaModel,
       ),
-      exportService: ReportExportService(),
+      exportService: ReportExportService(
+        imageLoader: imageStorageService.imageBytesFor,
+      ),
+      currentUserIdProvider: () => authService.currentUser?.uid,
+      sharedPreferences: sharedPreferences,
     );
 
     return InspectionViewModel(
       measurementService: MeasurementService(),
       repository: repository,
       cameras: cameras,
+      authService: authService,
     );
   }
 

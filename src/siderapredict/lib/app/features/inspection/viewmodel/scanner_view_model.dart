@@ -5,7 +5,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
-import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 import 'package:siderapredict/app/routes/app_router.dart';
 import 'package:siderapredict/app/routes/app_routes.dart';
 
@@ -178,10 +177,7 @@ class ScannerViewModel extends ChangeNotifier {
 
       Navigator.of(context).pushNamed(
         AppRoutes.processing,
-        arguments: ProcessingArgs(
-          imagePath: picture.path,
-          source: MeasurementSource.camera,
-        ),
+        arguments: ProcessingArgs(imagePath: picture.path),
       );
     } catch (error) {
       if (!context.mounted) return;
