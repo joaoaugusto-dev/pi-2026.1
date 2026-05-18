@@ -1,7 +1,18 @@
 import 'dart:convert';
 
-enum PieceSegmentType { edge, semicircle, hole, overallWidth, overallHeight, angle, slot, chamfer, diameter, spacing }
-enum MeasurementSource { camera }
+enum PieceSegmentType {
+  edge,
+  semicircle,
+  hole,
+  overallWidth,
+  overallHeight,
+  angle,
+  slot,
+  chamfer,
+  diameter,
+  spacing,
+}
+
 enum AiReportStatus { pending, generating, completed, failed }
 
 extension AiReportStatusStorage on AiReportStatus {
@@ -176,7 +187,6 @@ class MeasurementDraft {
     required this.scaleMicronsPerPx,
     required this.markerSizeMm,
     required this.segments,
-    this.source = MeasurementSource.camera,
     this.pieceNumberOfDay,
     this.extraInfo,
     this.quickStatus,
@@ -193,7 +203,6 @@ class MeasurementDraft {
   final double? scaleMicronsPerPx;
   final double markerSizeMm;
   final List<PieceSegmentMeasurement> segments;
-  final MeasurementSource source;
   final int? pieceNumberOfDay;
   final String? extraInfo;
   final String? quickStatus;
@@ -230,7 +239,6 @@ class MeasurementDraft {
     double? scaleMicronsPerPx,
     double? markerSizeMm,
     List<PieceSegmentMeasurement>? segments,
-    MeasurementSource? source,
     int? pieceNumberOfDay,
     String? extraInfo,
     String? quickStatus,
@@ -247,7 +255,6 @@ class MeasurementDraft {
       scaleMicronsPerPx: scaleMicronsPerPx ?? this.scaleMicronsPerPx,
       markerSizeMm: markerSizeMm ?? this.markerSizeMm,
       segments: segments ?? this.segments,
-      source: source ?? this.source,
       pieceNumberOfDay: pieceNumberOfDay ?? this.pieceNumberOfDay,
       extraInfo: extraInfo ?? this.extraInfo,
       quickStatus: quickStatus ?? this.quickStatus,
@@ -267,7 +274,6 @@ class MeasurementDraft {
       'scaleMicronsPerPx': scaleMicronsPerPx,
       'markerSizeMm': markerSizeMm,
       'segments': segments.map((m) => m.toJson()).toList(growable: false),
-      'source': source.name,
       'pieceNumberOfDay': pieceNumberOfDay,
       'extraInfo': extraInfo,
       'quickStatus': quickStatus,
@@ -290,19 +296,63 @@ class MeasurementDraft {
       perimeterMm: (json['perimeterMm'] as num? ?? 0).toDouble(),
       areaMm2: (json['areaMm2'] as num? ?? 0).toDouble(),
       scaleMicronsPerPx: (json['scaleMicronsPerPx'] as num?)?.toDouble(),
-      markerSizeMm: (json['markerSizeMm'] as num? ?? 10).toDouble(),
+      markerSizeMm: (json['markerSizeMm'] as num? ?? 11).toDouble(),
       segments: rawSegments
           .map(PieceSegmentMeasurement.fromJson)
           .toList(growable: false),
-      source: MeasurementSource.values.firstWhere(
-        (e) => e.name == json['source'],
-        orElse: () => MeasurementSource.camera,
-      ),
       pieceNumberOfDay: json['pieceNumberOfDay'] as int?,
       extraInfo: json['extraInfo'] as String?,
       quickStatus: json['quickStatus'] as String?,
     );
   }
+}
+
+MeasurementDraft mergeRemoteDraftWithLocalFallback({
+  required MeasurementDraft local,
+  required MeasurementDraft remote,
+}) {
+  return remote.copyWith(
+    sourceImagePath: remote.sourceImagePath.isNotEmpty
+        ? remote.sourceImagePath
+        : local.sourceImagePath,
+    processedImagePath: remote.processedImagePath.isNotEmpty
+        ? remote.processedImagePath
+        : local.processedImagePath,
+    calibrationSuccess: remote.calibrationSuccess || local.calibrationSuccess,
+    objectFound: remote.objectFound || local.objectFound,
+    scaleMicronsPerPx: remote.scaleMicronsPerPx ?? local.scaleMicronsPerPx,
+    markerSizeMm: local.markerSizeMm,
+    pieceNumberOfDay: remote.pieceNumberOfDay ?? local.pieceNumberOfDay,
+    extraInfo: remote.extraInfo ?? local.extraInfo,
+    quickStatus: remote.quickStatus ?? local.quickStatus,
+  );
+}
+
+MeasurementRecord mergeRemoteRecordWithLocalFallback({
+  required MeasurementRecord local,
+  required MeasurementRecord remote,
+}) {
+  final keepLocalAi =
+      local.aiReport.trim().isNotEmpty &&
+      (remote.aiReport.trim().isEmpty || remote.isAiReportStreaming);
+
+  return remote.copyWith(
+    aiReport: keepLocalAi ? local.aiReport : remote.aiReport,
+    aiReportStatus: keepLocalAi ? local.aiReportStatus : remote.aiReportStatus,
+    draft: mergeRemoteDraftWithLocalFallback(
+      local: local.draft,
+      remote: remote.draft,
+    ),
+    ownerUserId: remote.ownerUserId ?? local.ownerUserId,
+    photoStoragePath: remote.photoStoragePath ?? local.photoStoragePath,
+    thumbnailStoragePath:
+        remote.thumbnailStoragePath ?? local.thumbnailStoragePath,
+    nonConformityReason:
+        remote.nonConformityReason ?? local.nonConformityReason,
+    nonConformityObservation:
+        remote.nonConformityObservation ?? local.nonConformityObservation,
+    responsavel: remote.responsavel ?? local.responsavel,
+  );
 }
 
 enum ConformityStatus { ok, nok }
@@ -325,8 +375,9 @@ class MeasurementRecord {
     required this.aiReport,
     required this.aiReportStatus,
     required this.draft,
-    this.photoBase64,
-    this.thumbnailBase64,
+    this.ownerUserId,
+    this.photoStoragePath,
+    this.thumbnailStoragePath,
     this.conformityStatus = ConformityStatus.ok,
     this.nonConformityReason,
     this.nonConformityObservation,
@@ -340,8 +391,9 @@ class MeasurementRecord {
   final String aiReport;
   final AiReportStatus aiReportStatus;
   final MeasurementDraft draft;
-  final String? photoBase64;
-  final String? thumbnailBase64;
+  final String? ownerUserId;
+  final String? photoStoragePath;
+  final String? thumbnailStoragePath;
   final ConformityStatus conformityStatus;
   final String? nonConformityReason;
   final String? nonConformityObservation;
@@ -359,9 +411,10 @@ class MeasurementRecord {
     String? aiReport,
     AiReportStatus? aiReportStatus,
     MeasurementDraft? draft,
-    String? photoBase64,
-    String? thumbnailBase64,
-    bool clearPhotoBase64 = false,
+    String? ownerUserId,
+    String? photoStoragePath,
+    String? thumbnailStoragePath,
+    bool clearStoragePaths = false,
     ConformityStatus? conformityStatus,
     String? nonConformityReason,
     String? nonConformityObservation,
@@ -375,10 +428,13 @@ class MeasurementRecord {
       aiReport: aiReport ?? this.aiReport,
       aiReportStatus: aiReportStatus ?? this.aiReportStatus,
       draft: draft ?? this.draft,
-      photoBase64: clearPhotoBase64 ? null : (photoBase64 ?? this.photoBase64),
-      thumbnailBase64: clearPhotoBase64
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      photoStoragePath: clearStoragePaths
           ? null
-          : (thumbnailBase64 ?? this.thumbnailBase64),
+          : (photoStoragePath ?? this.photoStoragePath),
+      thumbnailStoragePath: clearStoragePaths
+          ? null
+          : (thumbnailStoragePath ?? this.thumbnailStoragePath),
       conformityStatus: conformityStatus ?? this.conformityStatus,
       nonConformityReason: nonConformityReason ?? this.nonConformityReason,
       nonConformityObservation:
@@ -395,8 +451,9 @@ class MeasurementRecord {
       'primaryValueMm': primaryValueMm,
       'aiReport': aiReport,
       'aiReportStatus': aiReportStatus.storageValue,
-      'photoBase64': photoBase64,
-      'thumbnailBase64': thumbnailBase64,
+      'ownerUserId': ownerUserId,
+      'photoStoragePath': photoStoragePath,
+      'thumbnailStoragePath': thumbnailStoragePath,
       'draft': draft.toJson(),
       'conformityStatus': conformityStatus.storageValue,
       'nonConformityReason': nonConformityReason,
@@ -411,20 +468,23 @@ class MeasurementRecord {
         ? draftJson
         : const <String, dynamic>{};
     final aiReport = json['aiReport'] as String? ?? '';
+    final draft = MeasurementDraft.fromJson(draftMap);
 
     return MeasurementRecord(
       id: json['id'] as String? ?? '',
       pieceName: json['pieceName'] as String? ?? 'Peca sem nome',
       createdAt: _parseDateTime(json['createdAt']),
-      primaryValueMm: (json['primaryValueMm'] as num? ?? 0).toDouble(),
+      primaryValueMm:
+          (json['primaryValueMm'] as num?)?.toDouble() ?? draft.primaryValueMm,
       aiReport: aiReport,
       aiReportStatus: AiReportStatusStorage.fromStorage(
         json['aiReportStatus'] as String?,
         aiReport: aiReport,
       ),
-      draft: MeasurementDraft.fromJson(draftMap),
-      photoBase64: json['photoBase64'] as String?,
-      thumbnailBase64: json['thumbnailBase64'] as String?,
+      draft: draft,
+      ownerUserId: json['ownerUserId'] as String?,
+      photoStoragePath: json['photoStoragePath'] as String?,
+      thumbnailStoragePath: json['thumbnailStoragePath'] as String?,
       conformityStatus: ConformityStatusStorage.fromStorage(
         json['conformityStatus'] as String?,
       ),

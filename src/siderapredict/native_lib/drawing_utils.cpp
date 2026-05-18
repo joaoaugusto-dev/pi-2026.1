@@ -21,6 +21,24 @@ int scaledThickness(float scale, int base) {
     return value;
 }
 
+cv::Point2f keepLabelInsideImage(const cv::Mat &img, cv::Point2f baseline,
+                                 cv::Size textSize, float pad) {
+    if (img.empty()) return baseline;
+
+    cv::Point2f tl = baseline - cv::Point2f(pad, textSize.height + pad);
+    cv::Point2f br = baseline + cv::Point2f(textSize.width + pad, pad + 2.0f);
+    const float minCoord = 2.0f;
+    const float maxX = static_cast<float>(img.cols - 3);
+    const float maxY = static_cast<float>(img.rows - 3);
+
+    if (tl.x < minCoord) baseline.x += minCoord - tl.x;
+    if (tl.y < minCoord) baseline.y += minCoord - tl.y;
+    if (br.x > maxX) baseline.x -= br.x - maxX;
+    if (br.y > maxY) baseline.y -= br.y - maxY;
+
+    return baseline;
+}
+
 // Desenha seta preenchida na ponta de uma linha
 void drawArrowHead(cv::Mat &img, cv::Point2f tip, cv::Point2f along,
                    float arrowLen, float arrowWidth, const cv::Scalar &color) {
@@ -51,6 +69,7 @@ cv::Size drawTextWithBackground(cv::Mat &img, const std::string &text,
 
     // Ajusta posição se houver sobreposição
     cv::Point2f clearPos = LabelManager::getInstance().getClearPos(pos, textSize, pad);
+    clearPos = keepLabelInsideImage(img, clearPos, textSize, pad);
     
     cv::Point2f tl = clearPos - cv::Point2f(pad, textSize.height + pad);
     cv::Point2f br = clearPos + cv::Point2f(textSize.width + pad, pad + 2.0f);
@@ -247,9 +266,16 @@ void drawAngleDimension(cv::Mat &img, cv::Point2f center, cv::Point2f p1,
         drawPos.y += textSize.height / 2.0f;
 
         const float pad = 3.0f * scale;
+        cv::Size occupiedSize(cvRound(totalWidth), textSize.height);
+        drawPos = LabelManager::getInstance().getClearPos(drawPos, occupiedSize, pad);
+        drawPos = keepLabelInsideImage(img, drawPos, occupiedSize, pad);
+
         // Desenha o fundo considerando o símbolo
         cv::Rect2f bgRect(drawPos.x - pad, drawPos.y - textSize.height - pad, 
                           totalWidth + pad * 2.0f, textSize.height + pad * 2.0f + 2.0f);
+        LabelManager::getInstance().addRect(cv::Rect(cvRound(bgRect.x), cvRound(bgRect.y),
+                                                     cvRound(bgRect.width),
+                                                     cvRound(bgRect.height)));
         cv::rectangle(img, bgRect, DrawColors::kTextBgAlpha, cv::FILLED);
         cv::rectangle(img, bgRect, cv::Scalar(DrawColors::kTextBgAlpha[0]*0.85, 
                                               DrawColors::kTextBgAlpha[1]*0.85, 

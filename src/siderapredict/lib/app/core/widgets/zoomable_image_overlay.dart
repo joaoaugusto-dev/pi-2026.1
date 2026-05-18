@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-
+import 'package:siderapredict/app/core/viewmodel/dialog_action_view_model.dart';
 
 class ZoomableImageOverlay {
   const ZoomableImageOverlay._();
+  static const DialogActionViewModel _dialogActions = DialogActionViewModel();
 
   static void show(
     BuildContext context, {
@@ -15,7 +16,7 @@ class ZoomableImageOverlay {
       barrierLabel: 'Imagem',
       pageBuilder: (ctx, a1, a2) {
         return GestureDetector(
-          onTap: () => Navigator.of(ctx).pop(),
+          onTap: _dialogActions.closeAction(ctx),
           child: Material(
             color: Colors.transparent,
             child: Stack(
@@ -24,7 +25,7 @@ class ZoomableImageOverlay {
                 SafeArea(
                   child: Center(
                     child: GestureDetector(
-                      onTap: () {},
+                      onTap: _dialogActions.emptyAction(),
                       child: Container(
                         width: MediaQuery.of(ctx).size.width * 0.92,
                         height: MediaQuery.of(ctx).size.height * 0.78,
@@ -67,7 +68,7 @@ class ZoomableImageOverlay {
                   top: 48,
                   right: 18,
                   child: GestureDetector(
-                    onTap: () => Navigator.of(ctx).pop(),
+                    onTap: _dialogActions.closeAction(ctx),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(

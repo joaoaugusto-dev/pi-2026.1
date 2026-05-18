@@ -59,3 +59,7 @@ app.*.map.json
 /android/app/release
 
 .env
+.codex
+.agents
+firebase.json
+lib/firebase_options.dart

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:siderapredict/app/core/theme/theme.dart';
-import 'package:siderapredict/app/features/settings/viewmodel/settings_viewmodel.dart';
-import 'package:siderapredict/app/features/auth/viewmodel/auth_viewmodel.dart';
-import 'package:siderapredict/app/routes/app_routes.dart';
+import 'package:siderapredict/app/core/theme/app_theme.dart';
+import 'package:siderapredict/app/features/settings/viewmodel/settings_view_model.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -39,59 +37,7 @@ class SettingsPage extends StatelessWidget {
             leading: const Icon(Icons.info_outline),
             title: const Text('Sidera Predict'),
             subtitle: const Text('Mais informações sobre o aplicativo'),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  title: Row(
-                    children: [
-                      AppLogo(
-                        height: 22,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(width: 24),
-                      Flexible(
-                        child: Text(
-                          'Sidera Predict',
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Inspeção dimensional com OpenCV + IA.'),
-                      SizedBox(height: 12),
-                      Text(
-                        'Versão 1.0.0',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Fechar'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            onTap: viewModel.aboutAction(context),
           ),
           const SizedBox(height: 24),
           _buildSectionTitle('Conta'),
@@ -102,16 +48,7 @@ class SettingsPage extends StatelessWidget {
               style: TextStyle(color: paletteRed, fontWeight: FontWeight.bold),
             ),
             subtitle: const Text('Encerrar sua sessão atual'),
-            onTap: () async {
-              final authViewModel = context.read<AuthViewModel>();
-              await authViewModel.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  AppRoutes.login,
-                  (route) => false,
-                );
-              }
-            },
+            onTap: viewModel.logoutAction(context),
           ),
         ],
       ),

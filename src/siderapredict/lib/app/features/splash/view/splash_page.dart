@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:siderapredict/app/routes/app_routes.dart';
-import 'package:siderapredict/app/core/theme/theme.dart';
+import 'package:siderapredict/app/core/theme/app_theme.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -11,8 +9,7 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with TickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final Animation<double> _fade;
 
@@ -27,18 +24,6 @@ class _SplashPageState extends State<SplashPage>
     _fade = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
 
     _fadeController.forward();
-    _navigateToMenu();
-  }
-
-  Future<void> _navigateToMenu() async {
-    await Future.delayed(const Duration(milliseconds: 2500));
-    if (!mounted) return;
-    
-    if (FirebaseAuth.instance.currentUser != null) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.menuPrincipal);
-    } else {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-    }
   }
 
   @override
@@ -83,15 +68,11 @@ class _SplashPageState extends State<SplashPage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              primaryColor,
-              paletteRed,
-            ],
+            colors: [primaryColor, paletteRed],
           ),
         ),
         child: Stack(
           children: [
-            
             Positioned(
               top: -100,
               right: -100,

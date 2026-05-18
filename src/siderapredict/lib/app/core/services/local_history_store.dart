@@ -1,13 +1,20 @@
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 
 class LocalHistoryStore {
+  LocalHistoryStore({String? Function()? sessionKeyProvider})
+    : _sessionKeyProvider = sessionKeyProvider ?? _defaultSessionKeyProvider;
+
+  final String? Function() _sessionKeyProvider;
+
   Future<File> _historyFile() async {
     final directory = await getApplicationDocumentsDirectory();
-    return File('${directory.path}/measurement_history.json');
+    final sessionKey = _sanitizedSessionKey(_sessionKeyProvider());
+    return File('${directory.path}/measurement_history_$sessionKey.json');
   }
 
   Future<List<MeasurementRecord>> loadAll() async {
@@ -71,10 +78,22 @@ class LocalHistoryStore {
   }
 
   MeasurementRecord _sanitizeRecord(MeasurementRecord record) {
-    final draft = record.draft.copyWith(
-      sourceImagePath: '',
-      processedImagePath: '',
-    );
-    return record.copyWith(draft: draft);
+    return record;
+  }
+
+  static String? _defaultSessionKeyProvider() {
+    try {
+      return supabase.Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _sanitizedSessionKey(String? raw) {
+    final normalized = raw?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return 'signed_out';
+    }
+    return normalized.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
   }
 }

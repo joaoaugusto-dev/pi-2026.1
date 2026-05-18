@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:siderapredict/app/core/theme/theme.dart';
-
-
+import 'package:siderapredict/app/core/theme/app_theme.dart';
 
 class PrimaryActionButton extends StatelessWidget {
   final String label;
@@ -22,9 +20,7 @@ class PrimaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = primaryButtonStyle(
-      backgroundColor: backgroundColor,
-    );
+    final style = primaryButtonStyle(backgroundColor: backgroundColor);
 
     if (isLoading) {
       return SizedBox(
