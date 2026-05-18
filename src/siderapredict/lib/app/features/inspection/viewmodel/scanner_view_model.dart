@@ -8,10 +8,14 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:siderapredict/app/routes/app_router.dart';
 import 'package:siderapredict/app/routes/app_routes.dart';
 
+typedef PhotoCaptureHandler = Future<XFile?> Function();
+
 class ScannerViewModel extends ChangeNotifier {
-  ScannerViewModel({required this.cameras});
+  ScannerViewModel({required this.cameras, PhotoCaptureHandler? captureHandler})
+    : _captureHandler = captureHandler;
 
   final List<CameraDescription> cameras;
+  final PhotoCaptureHandler? _captureHandler;
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
   StreamSubscription<AccelerometerEvent>? _accelerometerSub;
@@ -119,9 +123,23 @@ class ScannerViewModel extends ChangeNotifier {
   }
 
   Future<XFile?> capture() async {
-    if (_controller == null ||
-        !_controller!.value.isInitialized ||
-        _isCapturing) {
+    if (_isCapturing) {
+      return null;
+    }
+
+    final captureHandler = _captureHandler;
+    if (captureHandler != null) {
+      _isCapturing = true;
+      notifyListeners();
+      try {
+        return await captureHandler();
+      } finally {
+        _isCapturing = false;
+        notifyListeners();
+      }
+    }
+
+    if (_controller == null || !_controller!.value.isInitialized) {
       return null;
     }
     _isCapturing = true;

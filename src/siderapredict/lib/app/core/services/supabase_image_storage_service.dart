@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -128,7 +127,9 @@ class SupabaseImageStorageService {
     }
 
     try {
-      final bytes = await _supabase.storage.from(bucketName).download(storagePath);
+      final bytes = await _supabase.storage
+          .from(bucketName)
+          .download(storagePath);
 
       // Save to disk cache
       try {
@@ -150,7 +151,9 @@ class SupabaseImageStorageService {
 
   Future<File> _diskCacheFile(String storagePath) async {
     final directory = await getApplicationSupportDirectory();
-    final sanitizedPath = storagePath.replaceAll('/', '_').replaceAll('\\', '_');
+    final sanitizedPath = storagePath
+        .replaceAll('/', '_')
+        .replaceAll('\\', '_');
     return File('${directory.path}/image_cache/$sanitizedPath');
   }
 
