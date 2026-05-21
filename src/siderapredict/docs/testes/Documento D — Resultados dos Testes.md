@@ -3,29 +3,34 @@
 **Projeto:** Sidera Predict  
 **Tecnologia:** Flutter  
 **Arquitetura:** MVVM  
-**Data de Execução:** 17/05/2026  
+**Data de Execução:** 21/05/2026  
 **Executor:** Equipe ADS — 3º Semestre  
 
 ## 1. Resumo da Execução
 
 | Métrica | Valor |
 |---------|-------|
-| Total de testes planejados | 29 |
-| Total de testes executados | 29 |
-| Total de testes aprovados | ✅ 29 |
+| Total de testes planejados em `test/` | 29 |
+| Total de testes executados em `test/` | 29 |
+| Total de testes aprovados em `test/` | ✅ 29 |
+| Total de testes planejados em `integration_test/` | 5 |
+| Total de testes executados em `integration_test/` | 5 |
+| Total de testes aprovados em `integration_test/` | ✅ 5 |
 | Total de testes reprovados | ❌ 0 |
 | Taxa de aprovação | **100%** |
-| Tempo de execução | < 1 segundo |
+| Tempo de execução `test/` | < 1 segundo |
+| Tempo de execução `integration_test/` | 00:56 |
 
 ## 2. Comando de Execução
 
 ```bash
 flutter test test/ --reporter expanded
+flutter test integration_test
 ```
 
 ## 3. Saída do Terminal
 
-```
+```text
 00:00 +1:  TC01 — Login com credenciais válidas retorna sucesso
 00:00 +2:  TC02 — Login com senha errada retorna erro
 00:00 +3:  TC03 — Login com usuário inexistente retorna erro
@@ -56,6 +61,21 @@ flutter test test/ --reporter expanded
 00:00 +28: TC28 — Criar registro e verificar ciclo de status da IA
 00:00 +29: TC29 — Serializar lista de registros e restaurar
 00:00 +29: All tests passed!
+```
+
+Saída do comando `flutter test integration_test`:
+
+```text
+00:00 +0: integration_test/auth_flow_test.dart: TC25 - Cadastro e navegação para Menu Principal
+00:08 +1: integration_test/auth_flow_test.dart: TC26 - Login com campos vazios exibe validacoes
+00:09 +2: integration_test/auth_flow_test.dart: TC27 - Login invalido exibe mensagem e nao navega
+00:10 +3: integration_test/auth_flow_test.dart: TC28 - Login valido navega para Menu Principal
+00:37 +4: integration_test/full_inspection_flow_test.dart: TC29 - Auth, modos visuais, histórico, medição simulada e anotação
+Job IA solicitado
+Iniciando Job IA
+Job IA concluido com sucesso
+Lock IA liberado apos Job
+00:56 +5: All tests passed!
 ```
 
 ## 4. Resultados Detalhados — Login
@@ -117,7 +137,17 @@ flutter test test/ --reporter expanded
 | TC28 | Ciclo IA completo | ✅ Aprovado | pending → generating → completed |
 | TC29 | Serializar lista | ✅ Aprovado | 3 registros restaurados sem perda |
 
-## 10. Análise dos Riscos
+## 10. Resultados Detalhados — Integração de UI
+
+| TC | Descrição | Resultado | Observação |
+|----|-----------|-----------|------------|
+| IT-TC25 | Cadastro e navegação para Menu Principal | ✅ Aprovado | Cadastro concluído e tela "MENU PRINCIPAL" exibida |
+| IT-TC26 | Login com campos vazios | ✅ Aprovado | Validações "Campo obrigatório" e "Senha obrigatória" exibidas |
+| IT-TC27 | Login inválido | ✅ Aprovado | Mensagem de credenciais inválidas exibida, sem navegação |
+| IT-TC28 | Login válido | ✅ Aprovado | Login concluído e `userName` atualizado |
+| IT-TC29 | Fluxo completo auth → modos → histórico → medição → anotação → IA → histórico | ✅ Aprovado | Registro salvo com anotação e IA validada em `pending → generating → completed` |
+
+## 11. Análise dos Riscos
 
 | Risco | Status | Evidência |
 |-------|--------|-----------|
@@ -126,13 +156,14 @@ flutter test test/ --reporter expanded
 | R03 — Cadastro aceitar duplicados | ✅ Mitigado | TC06, TC07, TC27 comprovam rejeição |
 | R04 — Mensagens não exibidas | ✅ Mitigado | TC13-TC16 comprovam mensagens corretas |
 | R05 — Estado inconsistente | ✅ Mitigado | TC04 comprova `isLoading` consistente |
-| R06 — IA presa em "gerando" | ✅ Mitigado | TC10-TC12, TC28 comprovam ciclo completo |
+| R06 — IA presa em "gerando" | ✅ Mitigado | TC10-TC12, TC28 e IT-TC29 comprovam ciclo completo |
 | R07 — Dados perdidos na serialização | ✅ Mitigado | TC24, TC29 comprovam integridade |
 | R08 — Medição inválida salva | ✅ Mitigado | TC18, TC20 comprovam rejeição |
+| R09 — Medição salva não aparecer no histórico | ✅ Mitigado | IT-TC29 confirma cadastro no histórico após medição simulada |
 
-## 11. Conclusão
+## 12. Conclusão
 
-Todos os 29 casos de teste planejados foram executados com sucesso, resultando em **100% de aprovação**. Os riscos identificados no Documento A foram mitigados e evidenciados pelos resultados dos testes.
+Todos os 29 casos de teste planejados em `test/` e os 5 casos planejados em `integration_test/` foram executados com sucesso, resultando em **100% de aprovação**. Os riscos identificados no Documento A foram mitigados e evidenciados pelos resultados dos testes.
 
 O sistema Sidera Predict atende aos requisitos funcionais testados (RF01 a RF12) conforme definido na Base Conceitual de Teste.
 

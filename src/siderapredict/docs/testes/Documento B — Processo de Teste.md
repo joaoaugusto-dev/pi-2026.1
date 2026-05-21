@@ -17,6 +17,7 @@
 - Flutter SDK
 - Dart SDK 3.11+
 - `flutter_test` (nativo do SDK)
+- `integration_test` (SDK Flutter)
 - Sem dependências externas (sem mockito, sem build_runner)
 
 ## 3. Critérios de Entrada
@@ -29,7 +30,8 @@
 
 ## 4. Critérios de Saída
 
-- Todos os 29 testes executados
+- Todos os 29 testes de unidade/integração lógica executados
+- Todos os 5 testes de integração de UI executados em dispositivo/emulador
 - Todos os testes aprovados
 - Resultados registrados no Documento D
 - Nenhum teste reprovado
@@ -44,6 +46,7 @@
 6. Testar Submit de Relatório — Conformidade (TC21 a TC23)
 7. Testar Submit de Relatório — Serialização (TC24)
 8. Testar Integração — Fluxos Completos (TC25 a TC29)
+9. Testar Integração de UI — Auth Flow e Fluxo Completo (integration_test TC25 a TC29)
 
 ## 6. Implementação
 
@@ -59,15 +62,22 @@ test/
 │   └── validation_view_model_test.dart
 └── integration/
     └── fluxo_completo_test.dart
+
+integration_test/
+├── auth_flow_test.dart
+└── full_inspection_flow_test.dart
 ```
 
 ## 7. Controle
 
 | Métrica | Quantidade |
 |---------|-----------|
-| Planejados | 29 |
-| Executados | 29 |
-| Aprovados | 29 |
+| Planejados em `test/` | 29 |
+| Executados em `test/` | 29 |
+| Aprovados em `test/` | 29 |
+| Planejados em `integration_test/` | 5 |
+| Executados em `integration_test/` | 5 |
+| Aprovados em `integration_test/` | 5 |
 | Reprovados | 0 |
 
 ## 8. Execução
@@ -81,6 +91,9 @@ flutter test test/ --reporter expanded
 
 # Arquivo específico
 flutter test test/viewmodel/auth_view_model_test.dart
+
+# Testes de integração com dispositivo conectado
+flutter test integration_test
 ```
 
 ## 9. Conclusão

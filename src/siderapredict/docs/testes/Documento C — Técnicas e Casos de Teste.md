@@ -264,7 +264,77 @@ Resultado Esperado: todos os campos restaurados iguais ao original
 
 ---
 
-## 3. Tabela Consolidada de Técnicas
+## 3. Casos de Integração de UI
+
+Os casos abaixo são executados com `integration_test`, simulando interação real com a interface Flutter em dispositivo/emulador.
+
+### IT-TC25 — Cadastro e navegação para Menu Principal
+
+**Técnica:** Teste Baseado em Cenário  
+**Justificativa:** Valida o fluxo completo de cadastro, Provider, ViewModel fake e navegação.
+
+Resultado Esperado: cadastro realizado, `userName` atualizado e tela "MENU PRINCIPAL" exibida.
+
+---
+
+### IT-TC26 — Login com campos vazios
+
+**Técnica:** Valor Limite  
+**Justificativa:** Campos vazios representam o limite inferior de entrada do formulário.
+
+Resultado Esperado: mensagens "Campo obrigatório" e "Senha obrigatória" exibidas, sem navegação.
+
+---
+
+### IT-TC27 — Login inválido
+
+**Técnica:** Particionamento de Equivalência  
+**Justificativa:** Senha incorreta representa classe inválida de autenticação.
+
+Resultado Esperado: mensagem "Credenciais inválidas. Verifique seus dados." exibida e Menu Principal não aberto.
+
+---
+
+### IT-TC28 — Login válido
+
+**Técnica:** Particionamento de Equivalência  
+**Justificativa:** Usuário cadastrado e senha correta representam classe válida de autenticação.
+
+Resultado Esperado: login realizado, `userName` atualizado e tela "MENU PRINCIPAL" exibida.
+
+---
+
+### IT-TC29 — Fluxo completo com modos, medição, anotação e IA
+
+**Técnica:** Teste Baseado em Cenário + Transição de Estado  
+**Justificativa:** Valida o fluxo ponta a ponta da interface e a transição do relatório IA dentro do fluxo de medição.
+
+Passos principais:
+
+1. Realizar login válido.
+2. Acessar configurações.
+3. Ativar modo escuro.
+4. Ativar alto contraste.
+5. Retornar ao modo claro.
+6. Acessar histórico vazio.
+7. Abrir nova medição com câmera simulada.
+8. Processar medição simulada válida.
+9. Preencher identificação da peça.
+10. Marcar "NÃO CONFORME".
+11. Selecionar todos os motivos de reprovação.
+12. Registrar observação/anotação.
+13. Salvar medição.
+14. Validar IA em fila (`pending`).
+15. Validar IA gerando (`generating`).
+16. Liberar relatório final fake.
+17. Validar IA concluída (`completed`).
+18. Abrir histórico e confirmar registro cadastrado.
+
+Resultado Esperado: registro salvo no histórico, status "NÃO CONFORME" exibido, anotação persistida e ciclo IA `pending → generating → completed` concluído.
+
+---
+
+## 4. Tabela Consolidada de Técnicas
 
 | Condição | Técnica |
 |----------|---------|
@@ -293,7 +363,7 @@ Resultado Esperado: todos os campos restaurados iguais ao original
 | CT23 | Valor Limite |
 | CT24 | Cenário |
 
-## 4. Tabela Consolidada de Casos de Teste
+## 5. Tabela Consolidada de Casos de Teste
 
 | ID | Caso de Teste |
 |----|--------------|
@@ -327,8 +397,18 @@ Resultado Esperado: todos os campos restaurados iguais ao original
 | TC28 | Ciclo de status da IA completo |
 | TC29 | Serializar e restaurar lista de registros |
 
-## 5. Conclusão da Etapa
+## 6. Tabela Consolidada de Integração de UI
 
-As condições de teste identificadas no Documento A foram derivadas em 29 casos de teste completos utilizando técnicas formais definidas pela ISO/IEC/IEEE 29119-4.
+| ID | Caso de Teste |
+|----|--------------|
+| IT-TC25 | Cadastro e navegação para Menu Principal |
+| IT-TC26 | Login com campos vazios exibindo validações |
+| IT-TC27 | Login inválido exibindo mensagem e sem navegação |
+| IT-TC28 | Login válido navegando para Menu Principal |
+| IT-TC29 | Auth → modos visuais → histórico → medição simulada → anotação → IA pending/generating/completed → histórico |
+
+## 7. Conclusão da Etapa
+
+As condições de teste identificadas no Documento A foram derivadas em 29 casos de teste automatizados em `test/` e 5 casos de integração de UI em `integration_test/`, utilizando técnicas formais definidas pela ISO/IEC/IEEE 29119-4.
 
 Os casos de teste produzidos estão implementados como testes automatizados no projeto Flutter, utilizando testes de unidade e testes de integração.

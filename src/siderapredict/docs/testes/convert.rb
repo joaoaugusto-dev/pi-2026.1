@@ -6,7 +6,9 @@ FILES = [
   "Documento A — Base Conceitual de Teste.md",
   "Documento B — Processo de Teste.md",
   "Documento C — Técnicas e Casos de Teste.md",
-  "Documento D — Resultados dos Testes.md"
+  "Documento D — Resultados dos Testes.md",
+  "Documento D — Execução e Resultados dos Testes.md",
+  "Documento E — Implementação dos Testes de Integração.md"
 ]
 
 DOC_DIR = File.dirname(__FILE__)
