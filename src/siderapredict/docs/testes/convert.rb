@@ -94,7 +94,11 @@ FILES.each do |file_name|
         p {
           margin-top: 0;
           margin-bottom: 16px;
-          text-align: left;
+          text-align: justify;
+        }
+
+        li, td, blockquote p {
+          text-align: justify;
         }
 
         ul, ol {
