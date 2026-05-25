@@ -37,7 +37,7 @@ O SIDERA PREDICT tem como objetivos principais:
 
 1. Facilitar a inspeção dimensional de peças metálicas utilizando visão computacional e sistema de marcadores.
 2. Garantir uma precisão de até **1,5 mm** (tolerância para corte e dobra).
-3. Garantir rastreabilidade total dos resultados através de relatórios automáticos.
+3. Garantir rastreabilidade total dos resultados por meio de relatórios automáticos.
 4. Fornecer feedback ao operador, delegando a comparação final ao julgamento humano assistido.
 5. Gerar relatórios históricos exportáveis para Excel, PDF e bancos de dados externos.
 
@@ -51,7 +51,7 @@ O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
   - ![Inspeção Dimensional](docs/diagrams/UC01_sequence.png)
 - **Interpretação e Validação:** O operador compara a medida lida pelo app com o desenho técnico e registra a conformidade ou não conformidade.
   - ![Registro de Não Conformidade](docs/diagrams/UC02_sequence.png)
-- **Gerenciamento de Acessos:** Sistema de cadastro with validação em tempo real e login unificado para garantir a segurança e a rastreabilidade individual.
+- **Gerenciamento de Acessos:** Sistema de cadastro com validação em tempo real e login unificado para garantir a segurança e a rastreabilidade individual.
   - ![Cadastro de Usuário](docs/diagrams/UC04_sequence.png)
   - ![Login de Usuário](docs/diagrams/UC05_sequence.png)
 - **Relatórios e Rastreabilidade:** Histórico de medições exportável com identificação automática do responsável e armazenamento em nuvem.
@@ -63,7 +63,7 @@ O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
 
 - **Precisão Industrial:** Foco em atender a tolerância de 1,5 mm exigida no chão de fábrica.
 - **Execução Local (Edge AI):** Processamento rápido diretamente no dispositivo.
-- **Escalabilidade Refinada:** Uso de escalas centesimais/milesimais nos marcadores para compensar limitações de resolução.
+- **Escalabilidade Refinada:** Uso de escalas centimétricas e milimétricas nos marcadores para compensar limitações de resolução.
 - **Simplicidade de Uso:** Interface otimizada para o ritmo da produção, reduzindo a dependência de ferramentas manuais.
 
 ---
@@ -77,6 +77,15 @@ O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
 ---
 
 ---
+
+---
+
+## 8. Validação com o Público
+
+O projeto foi validado com o público da empresa Soufer em uma reunião via Google
+Meet com o gerente de inspeção de qualidade. Nessa validação, foram realizados
+testes e cenários de uso que ajudaram a confirmar a aderência da solução ao
+contexto real de aplicação.
 
 ---
 
