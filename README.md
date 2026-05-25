@@ -76,10 +76,6 @@ O sistema consiste em um aplicativo móvel (Flutter) que utiliza:
 
 ---
 
----
-
----
-
 ## 8. Validação com o Público
 
 O projeto foi validado com o público da empresa Soufer em uma reunião via Google
