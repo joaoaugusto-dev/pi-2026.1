@@ -500,8 +500,9 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   cv::Mat dark_mask;
   cv::threshold(roi_gray, dark_mask, 0, 255,
                 cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+  // Morfologia mais agressiva para eliminar resíduos de textura
   cv::Mat hole_open =
-      cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+      cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
   cv::morphologyEx(dark_mask, dark_mask, cv::MORPH_OPEN, hole_open);
 
   cv::Mat not_dark;
@@ -512,28 +513,13 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   cv::morphologyEx(cavity_mask, cavity_mask, cv::MORPH_OPEN, hole_open);
   cv::morphologyEx(cavity_mask, cavity_mask, cv::MORPH_CLOSE, hole_open);
 
-  cv::Mat edge_map;
-  cv::Canny(roi_gray, edge_map, 45, 130, 3);
-
-  // --- ADIÇÃO: Detecção de furos escuros (slots/pílulas) dentro da peça ---
-  // Tenta encontrar regiões significativamente mais escuras que a média da peça usando threshold adaptativo
-  cv::Mat internal_dark;
-  cv::adaptiveThreshold(roi_gray, internal_dark, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, 45, 10);
-  // Dilatar um pouco para fundir possíveis ruídos internos
-  cv::Mat internal_holes;
-  cv::bitwise_and(internal_dark, piece_mask, internal_holes);
-
-  // Unir com a cavity_mask original (que pega furos claros/vazados)
-  cv::Mat combined_holes;
-  cv::bitwise_or(cavity_mask, internal_holes, combined_holes);
-  cv::morphologyEx(combined_holes, combined_holes, cv::MORPH_CLOSE, hole_open);
-  
-  // Reatribuir para cavity_mask para que o resto da lógica (contours, circularity) funcione
-  cavity_mask = combined_holes;
-
+  // Canny com thresholds elevados para ignorar bordas fracas de textura
+  // e blur mais forte para suprimir rugosidade superficial
   cv::Mat blur;
-  cv::medianBlur(roi_gray, blur, 5);
-  cv::GaussianBlur(blur, blur, cv::Size(3, 3), 0.0);
+  cv::medianBlur(roi_gray, blur, 7);
+  cv::GaussianBlur(blur, blur, cv::Size(5, 5), 0.0);
+  cv::Mat edge_map;
+  cv::Canny(blur, edge_map, 60, 180, 3);
 
   // HoughCircles é usado como gerador de candidatos; a aceitação vem do suporte
   // angular e do merge com contornos ajustados por círculo.
@@ -599,12 +585,49 @@ detectHoleCircles(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   std::vector<std::vector<cv::Point>> hole_contours;
   cv::findContours(cavity_mask, hole_contours, cv::RETR_LIST,
                    cv::CHAIN_APPROX_NONE);
+
+  // Calcular intensidade média da peça para validação de contraste
+  float piece_mean_intensity = 0.0f;
+  {
+    int piece_px_count = 0;
+    double piece_intensity_sum = 0.0;
+    for (int y = 0; y < roi_gray.rows; ++y) {
+      for (int x = 0; x < roi_gray.cols; ++x) {
+        if (piece_mask.at<unsigned char>(y, x) > 0U) {
+          piece_intensity_sum += roi_gray.at<unsigned char>(y, x);
+          ++piece_px_count;
+        }
+      }
+    }
+    if (piece_px_count > 0) {
+      piece_mean_intensity =
+          static_cast<float>(piece_intensity_sum / piece_px_count);
+    }
+  }
+
   for (const std::vector<cv::Point> &contour : hole_contours) {
     const double area = cv::contourArea(contour);
     // Aceitar de 0.20*circulo_min a 2.2*circulo_max (inclui semicírculos)
     if (area < CV_PI * min_radius * min_radius * 0.20 ||
         area > CV_PI * max_radius * max_radius * 2.2) {
       continue;
+    }
+
+    // Validação de contraste: rejeitar contornos cuja intensidade média
+    // interna não difere significativamente da superfície da peça
+    // (texturas/riscos têm contraste fraco vs. furos reais)
+    {
+      cv::Mat contour_mask = cv::Mat::zeros(roi_gray.size(), CV_8U);
+      const std::vector<std::vector<cv::Point>> wrap = {contour};
+      cv::drawContours(contour_mask, wrap, -1, cv::Scalar(255), cv::FILLED);
+      double contour_mean_val = cv::mean(roi_gray, contour_mask)[0];
+      float contrast = std::fabs(static_cast<float>(contour_mean_val) -
+                                 piece_mean_intensity);
+      // Furos reais (vazados ou profundos) têm contraste > 25 tipicamente;
+      // texturas superficiais ficam abaixo disso
+      if (contrast < 20.0f) {
+        continue;
+      }
     }
 
     const cv::Moments m = cv::moments(contour);
@@ -2193,12 +2216,13 @@ detectSlots(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
     drawFilledContourMask(outer_local, &piece_mask);
   }
 
-  // Detectar cavidades internas — adaptiveThreshold
-  cv::Mat cavity_mask;
-  cv::adaptiveThreshold(roi_gray, cavity_mask, 255,
-                        cv::ADAPTIVE_THRESH_GAUSSIAN_C,
-                        cv::THRESH_BINARY_INV, 45, 10);
-  cv::bitwise_and(cavity_mask, piece_mask, cavity_mask);
+  // Detectar cavidades internas — apenas Otsu (global) para ignorar textura
+  // Otsu captura apenas contrastes fortes e globais, não variações locais
+  cv::Mat dark_slot_mask;
+  cv::threshold(roi_gray, dark_slot_mask, 0, 255,
+                cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+  cv::Mat dark_cavities;
+  cv::bitwise_and(dark_slot_mask, piece_mask, dark_cavities);
 
   // Também vazados (claros)
   cv::Mat light_mask;
@@ -2208,9 +2232,10 @@ detectSlots(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   cv::bitwise_and(light_mask, piece_mask, light_cavities);
 
   cv::Mat combined;
-  cv::bitwise_or(cavity_mask, light_cavities, combined);
+  cv::bitwise_or(dark_cavities, light_cavities, combined);
+  // Morfologia mais forte para eliminar ruído de textura
   cv::Mat morph_k =
-      cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+      cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
   cv::morphologyEx(combined, combined, cv::MORPH_CLOSE, morph_k);
   cv::morphologyEx(combined, combined, cv::MORPH_OPEN, morph_k);
 
@@ -2221,12 +2246,44 @@ detectSlots(const cv::Mat &roi_gray, const cv::Rect &roi_rect,
   const int min_radius =
       std::max(3, static_cast<int>(std::round(1.5f / mm_per_px)));
 
+  // Calcular intensidade média da peça para validação de contraste
+  float slot_piece_mean = 0.0f;
+  {
+    int px_count = 0;
+    double intensity_sum = 0.0;
+    for (int y = 0; y < roi_gray.rows; ++y) {
+      for (int x = 0; x < roi_gray.cols; ++x) {
+        if (piece_mask.at<unsigned char>(y, x) > 0U) {
+          intensity_sum += roi_gray.at<unsigned char>(y, x);
+          ++px_count;
+        }
+      }
+    }
+    if (px_count > 0) {
+      slot_piece_mean = static_cast<float>(intensity_sum / px_count);
+    }
+  }
+
   for (const std::vector<cv::Point> &contour : contours) {
     const double area = cv::contourArea(contour);
     const double perimeter = cv::arcLength(contour, true);
     if (perimeter < 1.0 ||
         area < CV_PI * min_radius * min_radius * 0.5) {
       continue;
+    }
+
+    // Validação de contraste: rejeitar contornos com contraste fraco
+    // (texturas/riscos superficiais)
+    {
+      cv::Mat cmask = cv::Mat::zeros(roi_gray.size(), CV_8U);
+      const std::vector<std::vector<cv::Point>> wrap = {contour};
+      cv::drawContours(cmask, wrap, -1, cv::Scalar(255), cv::FILLED);
+      double cmean = cv::mean(roi_gray, cmask)[0];
+      float contrast =
+          std::fabs(static_cast<float>(cmean) - slot_piece_mean);
+      if (contrast < 20.0f) {
+        continue;
+      }
     }
 
     const float circularity =
@@ -2493,7 +2550,7 @@ MeasurementResult process_image(const char *input_path,
 
   // --- Canny edge map global para reuso (line fitting, holes, etc) ---
   cv::Mat canny_roi;
-  cv::Canny(roi_gray, canny_roi, 45, 135, 3, true); // L2gradient para sub-pixel
+  cv::Canny(roi_gray, canny_roi, 60, 180, 3, true); // Thresholds elevados para ignorar textura
 
   // ===== PIPELINE A: Edge-first (precisão máxima, sem bloating) =====
   // Dilatar edges levemente para fechar micro-gaps de 1px
