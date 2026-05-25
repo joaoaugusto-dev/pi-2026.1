@@ -3,7 +3,7 @@
 ---
 
 **RN01 — Interpretação Humana Assistida**
-O sistema fornece as medições precisas via imagem, mas a decisão final de conformidade (OK/NOK) cabe ao operador através da comparação com o desenho técnico.
+O sistema fornece as medições precisas via imagem, mas a decisão final de conformidade (OK/NOK) cabe ao operador, por meio da comparação com o desenho técnico.
 Justificativa: Simplifica o processamento e evita erros de interpretação automática de desenhos complexos.
 
 **RN02 — Tolerância Industrial Alvo**
@@ -15,12 +15,12 @@ Toda medição dimensional deve ser realizada utilizando a base de 4 marcadores 
 Justificativa: Elimina distorções causadas pela distância focal da câmera.
 
 **RN04 — Estabilidade de Captura (Suporte Físico)**
-Para garantir a precisão de 1,5 mm, o dispositivo deve ser mantido em um faceamento a 90º em relação à peça.
+Para garantir a precisão de 1,5 mm, o dispositivo deve ser mantido alinhado a 90º em relação à peça.
 Justificativa: Evita distorções de perspectiva que invalidam a medição.
 
 **RN05 — Rastreabilidade Total**
 Toda medição realizada pelo aplicativo deve ser registrada no banco de dados, vinculando obrigatoriamente o nome do operador responsável (usuário autenticado), independentemente do resultado (conforme ou não conforme).
-Justificativa: Garante dados para auditoria, identificação de responsáveis e melhoria contínua do processo através da IA.
+Justificativa: Garante dados para auditoria, identificação de responsáveis e melhoria contínua do processo por meio da IA.
 
 **RN06 — Exportação de Dados**
 Os dados do histórico de medições devem ser exportáveis para Excel e PDF para análise e integração com sistemas de gestão da fábrica.

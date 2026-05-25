@@ -15,7 +15,7 @@ O sistema deve fornecer resposta em tempo real, com latência máxima de 2 segun
 Critério: Não impactar o ritmo produtivo.
 
 **RNF04 — Interface Simples e Intuitiva**
-A interface deve ser simples, com botões grandes, poucos cliques e adequada para uso com luvas e por usuários de diferentes faixas etárias.
+A interface deve ser simples, com botões grandes, poucos cliques e adequada para uso com luvas e para usuários de diferentes faixas etárias.
 Critério: Testes de usabilidade com operadores reais.
 
 **RNF05 — Integração com Rede Interna**

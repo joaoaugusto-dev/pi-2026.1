@@ -17,7 +17,7 @@ Validar a medição dimensional assistida por imagem em ambiente real, garantind
 
 ## 📌 Casos de Uso do MVP
 
-- **UC01 — Inspecionar Peça (Dimensional Assistida):** O operador utiliza o app para medir a peça e valida com o desenho.
+- **UC01 — Inspecionar Peça (Dimensional Assistida):** O operador utiliza o app para medir a peça e valida com o desenho técnico.
 - **UC02 — Registrar Não Conformidade:** Detalhamento do motivo de reprovação.
 - **UC03 — Consultar Histórico e Exportar:** Consulta de medições passadas e exportação de dados.
 - **UC04 — Realizar Cadastro:** Criação de conta com validação em tempo real.
@@ -34,7 +34,7 @@ Validar a medição dimensional assistida por imagem em ambiente real, garantind
 - **RF11:** Exportação de relatórios (Excel/PDF).
 - **RF12:** Uso fácil e intuitivo.
 - **RF13:** Cadastro de Usuário (Validação em tempo real).
-- **RF14:** Login Unificado (E-mail ou Matrícula).
+- **RF14:** Login unificado (e-mail ou matrícula).
 
 ---
 

@@ -8,14 +8,14 @@ Critério: O tempo de inicialização não deve exceder 3 segundos.
 
 **RF02 — Identificação da Inspeção**
 O sistema deve permitir identificar a peça que será medida para registro.
-Critério: Nº da leitura - Data da Leitura.
+Critério: Nº da leitura - data da leitura.
 
 **RF03 — Sistema de Marcadores (Calibração)**
 O sistema deve utilizar uma base com 4 marcadores específicos para calibrar a escala da imagem e converter pixels em milímetros/centímetros.
 Critério: Detecção automática dos 4 marcadores na imagem capturada.
 
 **RF04 — Orientação de Captura**
-O sistema deve orientar o operador visualmente para garantir que a foto seja tirada em um faceamento a 90º e com enquadramento correto.
+O sistema deve orientar o operador visualmente para garantir que a foto seja tirada com alinhamento de 90º e com enquadramento correto.
 Critério: Indicadores visuais de nível/alinhamento na tela.
 
 **RF05 — Captura de Imagem da Peça**
@@ -24,7 +24,7 @@ Critério: Captura para medição.
 
 **RF06 — Medição Dimensional por Visão Computacional**
 O sistema deve calcular as medidas reais da peça a partir da imagem capturada, utilizando o sistema de marcadores como referência.
-Critério: Precisão de +/- 1,5 mm.
+Critério: Precisão de ± 1,5 mm.
 
 **RF07 — Exibição de Medidas em Tempo Real**
 O sistema deve exibir na tela as dimensões extraídas (comprimentos, ângulos, diâmetros) sobrepostas à imagem da peça.
@@ -47,16 +47,16 @@ O sistema deve permitir a exportação dos dados de inspeção para formatos ext
 Critério: Exportação rápida via interface do app.
 
 **RF12 — Uso fácil e intuitivo**
-O sistema deve ser de fácil e intuitivo uso até para operadores com pouca experiência em tecnologia.
+O sistema deve ser de uso fácil e intuitivo, até para operadores com pouca experiência em tecnologia.
 Critério: Interface limpa e fluxos simplificados.
 
 **RF13 — Cadastro de Usuário**
 O sistema deve permitir que novos usuários se cadastrem, oferecendo validação visual imediata dos dados.
-Critério: Coleta de Nome, E-mail, Matrícula e Senha (com confirmação e validação de força em tempo real).
+Critério: Coleta de nome, e-mail, matrícula e senha (com confirmação e validação de força em tempo real).
 
 **RF14 — Autenticação de Usuário (Login Unificado)**
-O sistema deve permitir que usuários realizem login através de um campo unificado de identificação.
-Critério: Login via E-mail ou Matrícula (detecção automática) e Senha.
+O sistema deve permitir que usuários realizem login por meio de um campo unificado de identificação.
+Critério: Login via e-mail ou matrícula (detecção automática) e senha.
 
 **RF15 — Gerenciamento de Sessão**
 O sistema deve manter o usuário conectado entre utilizações do aplicativo, evitando logins repetitivos.

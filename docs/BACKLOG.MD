@@ -41,7 +41,7 @@
 ---
 
 ## Épico 3: Autenticação e Perfil
-**Contexto:** Gerenciar o acesso dos operadores e garantir a personalização e segurança dos dados.
+**Contexto:** Gerenciar o acesso dos operadores e garantir a personalização e a segurança dos dados.
 
 - **US08 — Cadastro de Operadores**
   - Como novo operador, desejo criar uma conta com meus dados profissionais (matrícula) e e-mail.

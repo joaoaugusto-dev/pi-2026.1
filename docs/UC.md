@@ -67,8 +67,8 @@
 **Fluxo Principal:**
 1. O usuário acessa a tela de Histórico.
 2. O sistema exibe a lista de inspeções realizadas.
-4. O usuário seleciona a opção "Exportar para Excel" ou "Exportar para PDF".
-5. O sistema gera e disponibiliza o arquivo de relatório.
+3. O usuário seleciona a opção "Exportar para Excel" ou "Exportar para PDF".
+4. O sistema gera e disponibiliza o arquivo de relatório.
 
 **Pós-condições:**
 - Relatório exportado com sucesso.
@@ -112,7 +112,7 @@
 
 **Fluxo Principal:**
 1. O operador abre o aplicativo na tela de login.
-2. O operador insere seu identificador (E-mail ou Matrícula) em um único campo.
+2. O operador insere seu identificador (e-mail ou matrícula) em um único campo.
 3. O operador insere sua senha.
 4. O sistema valida as credenciais via Firebase Auth.
 5. O sistema carrega o perfil do usuário e seu nome.
