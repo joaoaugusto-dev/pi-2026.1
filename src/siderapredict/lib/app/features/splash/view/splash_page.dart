@@ -134,7 +134,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 24),
                       child: Text(
-                        'VERSÃO 1.0',
+                        'VERSÃO 3.43',
                         style: TextStyle(
                           color: whiteColor.withValues(alpha: 0.5),
                           fontSize: 12,
