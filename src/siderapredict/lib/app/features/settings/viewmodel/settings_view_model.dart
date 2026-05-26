@@ -72,7 +72,7 @@ class SettingsViewModel extends ChangeNotifier {
             Text('Inspeção dimensional com OpenCV + IA.'),
             SizedBox(height: 12),
             Text(
-              'Versão 1.0.0',
+              'Versão 3.43',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
