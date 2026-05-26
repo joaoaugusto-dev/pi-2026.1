@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:siderapredict/app/core/theme/app_theme.dart';
 import 'package:siderapredict/app/core/widgets/measurement_info_card.dart';
+import 'package:siderapredict/app/core/widgets/success_reveal_overlay.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 import 'package:siderapredict/app/features/inspection/viewmodel/validation_view_model.dart';
 
@@ -15,65 +15,75 @@ class ValidationPage extends StatelessWidget {
     final draft = viewModel.currentDraft;
     final isLoading = viewModel.isLoading;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: buildAppBar(
-        context: context,
-        title: 'Validação',
-        toolbarHeight: 86,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: viewModel.closeAction(context),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-
-            if (keyboardOpen) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  18,
-                  16,
-                  MediaQuery.of(context).viewInsets.bottom + 16,
-                ),
-                child: _buildContent(
-                  context,
-                  draft,
-                  viewModel,
-                  isLoading,
-                  viewModel.primaryDisplay,
-                  viewModel.primaryLabel,
-                ),
-              );
-            }
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-              child: _buildContent(
-                context,
-                draft,
-                viewModel,
-                isLoading,
-                viewModel.primaryDisplay,
-                viewModel.primaryLabel,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: buildAppBar(
+            context: context,
+            title: 'Validação',
+            toolbarHeight: 86,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: viewModel.closeAction(context),
               ),
-            );
-          },
+              const SizedBox(width: 8),
+            ],
+          ),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final keyboardOpen =
+                    MediaQuery.of(context).viewInsets.bottom > 0;
+
+                if (keyboardOpen) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      18,
+                      16,
+                      MediaQuery.of(context).viewInsets.bottom + 16,
+                    ),
+                    child: _buildContent(
+                      context,
+                      draft,
+                      viewModel,
+                      isLoading,
+                      viewModel.primaryDisplay,
+                      viewModel.primaryLabel,
+                    ),
+                  );
+                }
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+                  child: _buildContent(
+                    context,
+                    draft,
+                    viewModel,
+                    isLoading,
+                    viewModel.primaryDisplay,
+                    viewModel.primaryLabel,
+                  ),
+                );
+              },
+            ),
+          ),
+          bottomNavigationBar: _buildBottomButtons(
+            context,
+            viewModel,
+            draft,
+            isLoading,
+          ),
         ),
-      ),
-      bottomNavigationBar: _buildBottomButtons(
-        context,
-        viewModel,
-        draft,
-        isLoading,
-      ),
+        SuccessRevealOverlay(
+          visible: viewModel.showSaveSuccess,
+          onComplete: () => viewModel.onSaveSuccessAnimationComplete(context),
+          duration: const Duration(milliseconds: 2000),
+        ),
+      ],
     );
   }
 

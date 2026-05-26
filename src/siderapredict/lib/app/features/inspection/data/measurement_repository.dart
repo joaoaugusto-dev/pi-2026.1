@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
 import 'package:image/image.dart' as img;
@@ -45,9 +46,13 @@ class MeasurementRepository {
 
   final Set<String> _activeReportJobs = <String>{};
   final Set<String> _remoteShellSaved = <String>{};
+  final Set<String> _activeCloudSyncJobs = <String>{};
   final Map<String, int> _reportRetryAttempts = <String, int>{};
   final Map<String, Timer> _reportRetryTimers = <String, Timer>{};
   final Set<String> _pendingDeletions = <String>{};
+
+  static const Duration _remoteShellSaveTimeout = Duration(seconds: 6);
+  static const Duration _imageUploadTimeout = Duration(seconds: 15);
 
   Completer<void>? _aiProcessingLock;
   int _sessionEpoch = 0;
@@ -63,6 +68,7 @@ class MeasurementRepository {
   void handleSessionChanged() {
     _sessionEpoch++;
     _activeReportJobs.clear();
+    _activeCloudSyncJobs.clear();
     _remoteShellSaved.clear();
     _reportRetryAttempts.clear();
     for (final timer in _reportRetryTimers.values) {
@@ -171,26 +177,17 @@ class MeasurementRepository {
     await _persistLocalRecord(record, sessionEpoch: sessionEpoch);
     _startSyncTimer(); // Start periodic sync if we just saved something locally
 
-    final stagedRecord = await _prepareRemoteShellRecord(
-      record,
-      sessionEpoch: sessionEpoch,
-    );
-    if (!_isSessionCurrent(sessionEpoch)) {
-      return stagedRecord;
-    }
-    _recordUpdatesController.add(
-      stagedRecord.copyWith(aiReportStatus: AiReportStatus.generating),
-    );
+    _recordUpdatesController.add(record);
     unawaited(
       Future<void>.microtask(
-        () => _generateReportInBackground(
-          stagedRecord,
+        () => _syncSavedRecordWithCloudPriority(
+          record,
           sessionEpoch: sessionEpoch,
         ),
       ),
     );
 
-    return stagedRecord;
+    return record;
   }
 
   Future<List<MeasurementRecord>> getLocalHistory() async {
@@ -326,7 +323,9 @@ class MeasurementRepository {
       _pendingDeletions.remove(recordId);
       await _savePendingDeletions();
     } catch (e) {
-      debugPrint('Erro ao excluir registro no Supabase (marcando para sync offline): $e');
+      debugPrint(
+        'Erro ao excluir registro no Supabase (marcando para sync offline): $e',
+      );
       _pendingDeletions.add(recordId);
       await _savePendingDeletions();
       _startSyncTimer();
@@ -343,7 +342,10 @@ class MeasurementRepository {
   }
 
   Future<void> _savePendingDeletions() async {
-    await _prefs.setStringList(_pendingDeletionsKey, _pendingDeletions.toList());
+    await _prefs.setStringList(
+      _pendingDeletionsKey,
+      _pendingDeletions.toList(),
+    );
   }
 
   Future<void> _generateReportInBackground(
@@ -552,17 +554,20 @@ class MeasurementRepository {
         _OptimizeImageParams(
           imagePath: imagePath,
           maxWidth: 300,
+          maxHeight: 300,
           jpegQuality: 60,
           maxBytes: 50000,
         ),
       );
 
-      final stored = await _imageStorageService.uploadMeasurementImages(
-        recordId: record.id,
-        photoBytes: detailedImage,
-        thumbnailBytes: thumbnailImage ?? detailedImage,
-        ownerUserId: record.ownerUserId,
-      );
+      final stored = await _imageStorageService
+          .uploadMeasurementImages(
+            recordId: record.id,
+            photoBytes: detailedImage,
+            thumbnailBytes: thumbnailImage ?? detailedImage,
+            ownerUserId: record.ownerUserId,
+          )
+          .timeout(_imageUploadTimeout);
 
       return record.copyWith(
         photoStoragePath: stored.photoStoragePath,
@@ -571,6 +576,40 @@ class MeasurementRepository {
     } catch (e) {
       debugPrint('Erro ao enviar imagem ao Supabase Storage: $e');
       return record;
+    }
+  }
+
+  Future<void> _syncSavedRecordWithCloudPriority(
+    MeasurementRecord record, {
+    required int sessionEpoch,
+  }) async {
+    if (_activeCloudSyncJobs.contains(record.id)) {
+      return;
+    }
+
+    _activeCloudSyncJobs.add(record.id);
+    try {
+      final stagedRecord = await _prepareRemoteShellRecord(
+        record,
+        sessionEpoch: sessionEpoch,
+      );
+      if (!_isSessionCurrent(sessionEpoch)) {
+        return;
+      }
+      _recordUpdatesController.add(
+        stagedRecord.copyWith(aiReportStatus: AiReportStatus.generating),
+      );
+      await _generateReportInBackground(
+        stagedRecord,
+        sessionEpoch: sessionEpoch,
+      );
+    } catch (e) {
+      debugPrint('Erro no sync prioritario da medicao ${record.id}: $e');
+      if (_isSessionCurrent(sessionEpoch)) {
+        _scheduleReportRetry(record.id);
+      }
+    } finally {
+      _activeCloudSyncJobs.remove(record.id);
     }
   }
 
@@ -657,9 +696,14 @@ class MeasurementRepository {
     }
 
     try {
-      await _remoteService.saveRecord(
-        record.copyWith(aiReport: '', aiReportStatus: AiReportStatus.pending),
-      );
+      await _remoteService
+          .saveRecord(
+            record.copyWith(
+              aiReport: '',
+              aiReportStatus: AiReportStatus.pending,
+            ),
+          )
+          .timeout(_remoteShellSaveTimeout);
       _remoteShellSaved.add(record.id);
     } catch (e) {
       debugPrint('Erro ao salvar registro inicial no Supabase: $e');
@@ -727,6 +771,22 @@ class MeasurementRepository {
   }
 }
 
+class _OptimizeImageParams {
+  final String imagePath;
+  final int maxWidth;
+  final int maxHeight;
+  final int jpegQuality;
+  final int? maxBytes;
+
+  _OptimizeImageParams({
+    required this.imagePath,
+    required this.maxWidth,
+    required this.maxHeight,
+    required this.jpegQuality,
+    this.maxBytes,
+  });
+}
+
 Future<Uint8List?> _readImageBytesTask(String imagePath) async {
   if (imagePath.isEmpty) return null;
 
@@ -740,20 +800,6 @@ Future<Uint8List?> _readImageBytesTask(String imagePath) async {
   }
 }
 
-class _OptimizeImageParams {
-  final String imagePath;
-  final int maxWidth;
-  final int jpegQuality;
-  final int maxBytes;
-
-  _OptimizeImageParams({
-    required this.imagePath,
-    required this.maxWidth,
-    required this.jpegQuality,
-    required this.maxBytes,
-  });
-}
-
 Future<Uint8List?> _optimizeImageTask(_OptimizeImageParams params) async {
   if (params.imagePath.isEmpty) return null;
 
@@ -762,22 +808,50 @@ Future<Uint8List?> _optimizeImageTask(_OptimizeImageParams params) async {
 
   try {
     final bytes = await file.readAsBytes();
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) {
-      return bytes.length <= params.maxBytes ? bytes : null;
-    }
-
-    final resized = decoded.width > params.maxWidth
-        ? img.copyResize(decoded, width: params.maxWidth)
-        : decoded;
-
-    final encoded = Uint8List.fromList(
-      img.encodeJpg(resized, quality: params.jpegQuality),
+    return optimizeImageBytesForUpload(
+      bytes,
+      maxWidth: params.maxWidth,
+      maxHeight: params.maxHeight,
+      jpegQuality: params.jpegQuality,
+      maxBytes: params.maxBytes,
     );
-
-    if (encoded.length > params.maxBytes) return null;
-    return encoded;
   } catch (_) {
     return null;
   }
+}
+
+@visibleForTesting
+Uint8List? optimizeImageBytesForUpload(
+  Uint8List bytes, {
+  int maxWidth = 1920,
+  int maxHeight = 1080,
+  int jpegQuality = 100,
+  int? maxBytes,
+}) {
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) {
+    return maxBytes == null || bytes.length <= maxBytes ? bytes : null;
+  }
+
+  final oriented = img.bakeOrientation(decoded);
+  final scale = math.min(
+    maxWidth / oriented.width,
+    maxHeight / oriented.height,
+  );
+  final shouldResize = scale < 1;
+  final target = shouldResize
+      ? img.copyResize(
+          oriented,
+          width: math.max(1, (oriented.width * scale).round()),
+          height: math.max(1, (oriented.height * scale).round()),
+          interpolation: img.Interpolation.cubic,
+        )
+      : oriented;
+
+  final encoded = Uint8List.fromList(
+    img.encodeJpg(target, quality: jpegQuality),
+  );
+
+  if (maxBytes != null && encoded.length > maxBytes) return null;
+  return encoded;
 }

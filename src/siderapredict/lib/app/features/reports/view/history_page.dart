@@ -5,7 +5,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:provider/provider.dart';
-
 import 'package:siderapredict/app/core/theme/app_theme.dart';
 import 'package:siderapredict/app/features/inspection/model/measurement_record.dart';
 import 'package:siderapredict/app/features/reports/viewmodel/history_view_model.dart';
@@ -376,7 +375,7 @@ class _RealtimeHistoryList extends StatefulWidget {
 class _RealtimeHistoryListState extends State<_RealtimeHistoryList> {
   static const Duration _insertDuration = Duration(milliseconds: 360);
   static const Duration _removeDuration = Duration(milliseconds: 280);
-  static const Duration _cueDuration = Duration(milliseconds: 1800);
+  static const Duration _cueDuration = Duration(milliseconds: 3000);
   static const Duration _emptyStateDuration = Duration(milliseconds: 220);
   static const Duration _cueReplayCooldown = Duration(milliseconds: 5000);
 

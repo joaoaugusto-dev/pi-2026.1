@@ -86,8 +86,6 @@ class InspectionViewModel extends ChangeNotifier {
     lastError = null;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 600));
-
     try {
       final saved = await _repository.saveMeasurement(
         pieceName: pieceName,
@@ -111,7 +109,8 @@ class InspectionViewModel extends ChangeNotifier {
   }
 
   Future<void> loadHistory() async {
-    isLoadingHistory = history.isEmpty; // Only show spinner if we have NO data yet
+    isLoadingHistory =
+        history.isEmpty; // Only show spinner if we have NO data yet
     lastError = null;
     notifyListeners();
 
@@ -255,13 +254,18 @@ class InspectionViewModel extends ChangeNotifier {
   }
 
   void _updateHistoryFromRemote(List<MeasurementRecord> remoteRecords) {
-    unawaited(_repository.reconcileAndPersistHistory(
-      currentHistory: history,
-      remoteRecords: remoteRecords,
-    ).then((merged) {
-      history = merged;
-      notifyListeners();
-    }).catchError((_) {}));
+    unawaited(
+      _repository
+          .reconcileAndPersistHistory(
+            currentHistory: history,
+            remoteRecords: remoteRecords,
+          )
+          .then((merged) {
+            history = merged;
+            notifyListeners();
+          })
+          .catchError((_) {}),
+    );
   }
 
   List<MeasurementRecord> _upsertHistory(

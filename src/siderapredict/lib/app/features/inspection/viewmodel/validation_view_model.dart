@@ -41,6 +41,7 @@ class ValidationViewModel extends ChangeNotifier {
   ConformityStatus conformityStatus = ConformityStatus.ok;
   String? nonConformityReason;
   String? nonConformityObservation;
+  bool showSaveSuccess = false;
 
   bool get isSaving => _inspectionViewModel.isSaving;
   bool get isLoading => isSaving;
@@ -168,10 +169,12 @@ class ValidationViewModel extends ChangeNotifier {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Medição salva com sucesso.')));
+    showSaveSuccess = true;
+    notifyListeners();
+  }
 
+  void onSaveSuccessAnimationComplete(BuildContext context) {
+    if (!context.mounted) return;
     Navigator.of(
       context,
     ).pushNamedAndRemoveUntil(AppRoutes.menuPrincipal, (route) => false);

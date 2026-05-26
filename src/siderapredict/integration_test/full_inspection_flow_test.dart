@@ -181,6 +181,7 @@ void main() {
 
         await tester.tap(find.text('SALVAR'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 2600));
         await _pumpUntil(
           tester,
           () =>
