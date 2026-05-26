@@ -12,6 +12,7 @@ de relatórios técnicos com IA via Ollama.
 - Overlay de enquadramento e nível durante a captura.
 - Processamento nativo com OpenCV para calibração, retificação e medição.
 - Validação da medição pelo operador com status conforme/não conforme.
+- Salvamento local imediato com sincronização prioritária em segundo plano.
 - Histórico persistido em Supabase com cache local.
 - Relatório técnico por IA usando endpoint Ollama.
 - Exportação de registros individuais ou histórico consolidado em PDF e Excel.
@@ -133,9 +134,17 @@ Esse script cria:
 O login por matrícula consulta o e-mail via RPC e depois autentica normalmente
 pelo Supabase Auth.
 
-Durante a geração do relatório por IA, o app mostra o texto em streaming apenas
-em memória/localmente. O Supabase recebe o registro uma única vez, depois que o
-relatório termina e as imagens são enviadas ao Storage.
+Ao salvar uma medição, o app persiste primeiro no histórico local para manter a
+interface responsiva mesmo em conexão lenta. Em seguida, inicia imediatamente a
+sincronização prioritária com Supabase Storage, Postgres e relatório IA em
+segundo plano. Se a rede estiver lenta ou indisponível, o registro permanece
+local e entra no ciclo de novas tentativas.
+
+A imagem detalhada enviada ao Storage preserva os bytes originais do arquivo
+processado/capturado, mantendo textos, marcações e números com a melhor
+qualidade disponível. Apenas a miniatura usada em listagens é otimizada para
+carregamento rápido; os arquivos locais de captura/processamento permanecem
+intactos no dispositivo.
 
 ## OpenCV e motor nativo
 
@@ -214,6 +223,8 @@ O modelo de medição armazena:
 - O histórico usa Supabase com cache local em arquivo JSON.
 - As fotos ficam no Supabase Storage; o banco guarda apenas caminhos e payload
   final otimizado, sem base64.
+- A imagem detalhada enviada ao Storage preserva a qualidade original; somente a
+  miniatura é otimizada para carregamento rápido.
 - Preferências de tema ficam em `SharedPreferences`.
 - A exportação usa `assets/soufer.png` como logo no PDF.
 - O pacote Android é `br.com.siderapredict.siderapredict`.
