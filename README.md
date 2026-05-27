@@ -136,7 +136,7 @@ Passos básicos:
 1. Clone o repositório:
 
 ```
-git clone <URL_DO_REPOSITORIO>
+git clone https://github.com/joaoaugusto-dev/pi-2026.1
 cd pi-2026.1
 ```
 
