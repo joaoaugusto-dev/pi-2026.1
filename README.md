@@ -104,3 +104,80 @@ Todos os documentos seguem rastreabilidade:
 - RN (Regras de Negócio)
 - RNF (Não Funcionais)
 - UC (Casos de Uso)
+
+---
+
+## Documentação
+
+- **Pasta principal de documentos:** [docs](docs/)
+- **Backlog:** [docs/BACKLOG.MD](docs/BACKLOG.MD)
+- **Requisitos Funcionais:** [docs/RF.MD](docs/RF.MD)
+- **Regras de Negócio:** [docs/RN.MD](docs/RN.MD)
+- **Requisitos Não Funcionais:** [docs/RNF.MD](docs/RNF.MD)
+- **Casos de Uso:** [docs/UC.md](docs/UC.md)
+- **Diagramas:** [docs/diagrams](docs/diagrams/) (fluxos, sequências e atividades)
+
+- **Documentação do app:** [src/siderapredict/docs](src/siderapredict/docs/testes) (documentação específica do aplicativo e testes)
+
+Consulte essas páginas para especificações, radio de aceitação, critérios de validação e diagramas de sequência.
+
+---
+
+## Instalação
+
+Pré-requisitos:
+
+- `Flutter` (recomendado: versão estável compatível com o projeto)
+- `Android SDK` / `Android Studio` (para builds Android)
+- `OpenCV` nativo se for necessário para compilação de bibliotecas nativas (ver `src/siderapredict/native_lib`)
+
+Passos básicos:
+
+1. Clone o repositório:
+
+```
+git clone <URL_DO_REPOSITORIO>
+cd pi-2026.1
+```
+
+2. Entre na pasta do app Flutter e instale dependências:
+
+```
+cd src/siderapredict
+flutter pub get
+```
+
+3. Build / Run (Android):
+
+```
+flutter build apk --release
+flutter install # instala no dispositivo conectado
+flutter run     # executa em dispositivo/emulador conectado
+```
+
+Observações:
+
+- Se usar recursos nativos (OpenCV, bibliotecas C++), verifique `src/siderapredict/native_lib` e siga instruções locais de compilação (CMake/NDK).
+- Em ambiente de desenvolvimento, `flutter run -d <device>` ou usar o Android Studio para depuração funcionam bem.
+
+---
+
+## Uso
+
+Instruções rápidas de uso após instalar/rodar o app:
+
+1. Abra o app no dispositivo.
+2. Na tela inicial, faça login ou crie usuário de teste.
+3. Acesse a funcionalidade de inspeção e posicione os marcadores físicos conforme instruções do equipamento.
+4. Capture a imagem e aguarde o processamento; o app exibirá medidas detectadas e indicadores de conformidade.
+5. Confirme/registre a inspeção e exporte o relatório via opções de exportação (Excel/PDF) disponíveis.
+
+Comandos úteis para testes:
+
+```
+# Executar testes unitários
+flutter test
+
+# Executar testes de integração (ex.: device/emulator conectado)
+flutter test integration_test
+```
